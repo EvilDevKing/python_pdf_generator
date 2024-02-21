@@ -1,0 +1,211 @@
+/*
+Copyright 2015, 2016 Sam Kauffman
+
+This file is part of the Inbreeding Calculator.
+
+The Inbreeding Calculator is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+html {
+    height: 100%;
+    font-size: 14px;
+    font-family: Sans-serif;
+}
+body {
+    height: 100%;
+    margin: 10px;
+    padding: 0;
+}
+#controls {
+    width: 25%;
+    height: 100%;
+    float: left;
+}
+body.results #controls {
+	width: 35%;
+}
+#result {
+	color: darkblue;
+}
+#breakdown {
+	padding-left: 0;
+}
+#breakdown > li {
+	list-style: none;
+	margin-left: 20px;
+    text-indent: -24px;
+	margin-bottom: 3px;
+}
+#breakdown > li.closed,
+#breakdown > li.open {
+	cursor: pointer;
+}
+#breakdown > li::before {
+	margin-right: 8px;
+	content: '\26ab';
+	color: #777;
+}
+#breakdown > li.closed::before {
+	margin-right: 6px;
+	content: '\25ba';
+	color: black;
+}
+#breakdown > li.open::before {
+	margin-right: 4px;
+	content: '\25bc';
+	color: black;
+}
+#breakdown > li ul {
+	padding-left: 20px;
+}
+#breakdown > li ul li {
+	list-style-type: none;
+	margin-left: 0;
+	text-indent: 0;
+	overflow-y: hidden;
+	transition: max-height .5s cubic-bezier(0, 1, 0.5, 1);
+}
+#breakdown > li.closed ul li {
+	max-height: 0;
+}
+#breakdown > li.open ul li {
+	max-height: 200vh; /* ridiculously large max height */
+}
+#breakdown .coefficient {
+	color: darkblue;
+}
+#breakdown .through {
+	font-size: .9em
+}
+#textarea {
+    width: 100%;
+    height: 10em;
+}
+#pedigree {
+    padding: 0 1em 0 3px;
+    border: 1px solid gray;
+    background-color: #F0F8F8;
+    float: right;
+    width: calc(75% - 20px);
+    height: 85%;
+    overflow: auto;
+}
+body.results #pedigree {
+    width: calc(65% - 20px);
+}	
+table {
+    border-collapse: collapse;
+    font-size: 1em;
+}
+td {
+    padding: 0;
+}
+#pedigree td:first-child {
+    width: 8em;
+    padding: 3px;
+    position: relative;
+}
+tr.s > td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2px;
+    height: 50%;
+    border: solid gray;
+    border-width: 1px 0 0 1px
+}
+tr.d > td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 50%;
+    width: 2px;
+    height: 50%;
+    border: solid gray;
+    border-width: 0 0 1px 1px
+}
+input.ind {
+    width: 10em;
+    border: 1px solid gray;
+}
+.more {
+    white-space: nowrap;
+	cursor: pointer;
+}
+ul.name-choices {
+    position: absolute;
+	z-index: 1;
+    margin: 0;
+    padding: 0;
+    border: 1px solid gray;
+    border-top: none;
+    background-color: white;
+    color: gray;
+    list-style: none;
+}
+ul.name-choices > li {
+    margin: 0;
+    padding: 0;
+    padding: 0 2px;
+    cursor: pointer;
+}
+ul.name-choices > li:hover {
+    background-color: #E4EEEE;
+}
+#confirmDialog {
+	position: absolute;
+	z-index: 10;
+	width: 300px;
+	background: white;
+	border: 1px solid gray;
+	text-align: center;
+}
+
+/* About page */
+
+html.about {
+	line-height: 22px;
+}
+.about body {
+	width: 800px;
+	margin: 0 auto;
+}
+.about h1 {
+	font-size: 24px;
+	margin-top: 1em;
+}
+.about table th,
+.about table td {
+	border: 1px solid #CCC;
+	padding: 0 4px;
+}
+.about table th {
+	background: white;
+}
+.about table th.subheading {
+	text-align: left;
+	font-style: italic;
+}
+.source {
+    vertical-align: super;
+    font-size: smaller;
+}
+.example {
+	margin: 1.5em 0;
+}
+.example p {
+	margin-top: 0;
+	margin-bottom: 0;
+}
