@@ -125,25 +125,53 @@ def get2DigitsFloatValue(input):
     return float('%.2f' % float(input))
 
 def sortByRate(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: float(x[1][:-1] if x[1][:-1] != "" else "0.00"), reverse=True)
-    if genType == "Top10":
-        return sorted_arr[:10]
+    sorted_arr = sorted(arr, key=lambda x: float(x[1][:-1]), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[1] == last_element[1]:
+                cutted_arr.append(v)
+            else: break
+        return cutted_arr
     else:
         return sorted_arr
 
 def sortByCoi(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: x[4], reverse=True)
-    if genType == "Top10":
-        return sorted_arr[:10]
+    sorted_arr = sorted(arr, key=lambda x: float(x[4][:-1]), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[4] == last_element[4]:
+                cutted_arr.append(v)
+            else: break
+        return cutted_arr
     else:
         return sorted_arr
 
-def sortByGrade(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: sortGrade(x[3]))
-    if genType == "Top10":
-        return sorted_arr[:10]
+def sortByVariant(arr, genType):
+    sorted_arr = sorted(arr, key=lambda x: float(x[2]), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[2] == last_element[2]:
+                cutted_arr.append(v)
+            else: break
+        return cutted_arr
     else:
         return sorted_arr
+    
+def sortByIndex(arr, ind):
+    sorted_arr = sorted(arr, key=lambda x: float(x[ind]), reverse=True)
+    cutted_arr = sorted_arr[:10]
+    last_element = cutted_arr[-1]
+    for v in sorted_arr[10:]:
+        if v[ind] == last_element[ind]:
+            cutted_arr.append(v)
+        else: break
+    return cutted_arr
 
 def sortGrade(value):
     if value == 'A+':

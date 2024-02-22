@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>409</height>
+    <height>483</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -36,16 +36,16 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>30</y>
-      <width>411</width>
+      <x>100</x>
+      <y>70</y>
+      <width>471</width>
       <height>41</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <family>Candara</family>
-      <pointsize>18</pointsize>
+      <pointsize>16</pointsize>
       <weight>75</weight>
       <bold>true</bold>
      </font>
@@ -64,7 +64,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>134</y>
+      <y>170</y>
       <width>431</width>
       <height>41</height>
      </rect>
@@ -73,7 +73,7 @@
      <item>
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>WorkSheet ID  </string>
+        <string>WorkSheet ID   </string>
        </property>
       </widget>
      </item>
@@ -85,6 +85,15 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
       </widget>
      </item>
     </layout>
@@ -93,9 +102,9 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>240</y>
+      <y>280</y>
       <width>541</width>
-      <height>22</height>
+      <height>41</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -133,6 +142,18 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::NoContextMenu</enum>
+       </property>
       </widget>
      </item>
      <item>
@@ -157,9 +178,9 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>300</y>
+      <y>350</y>
       <width>541</width>
-      <height>41</height>
+      <height>61</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -182,7 +203,7 @@
      <item>
       <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>PDF Generation Type    </string>
+        <string>      Type       </string>
        </property>
       </widget>
      </item>
@@ -196,6 +217,18 @@
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::NoContextMenu</enum>
        </property>
        <property name="editable">
         <bool>false</bool>
@@ -237,7 +270,7 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>350</y>
+      <y>420</y>
       <width>101</width>
       <height>41</height>
      </rect>
@@ -255,8 +288,8 @@
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>80</x>
-      <y>24</y>
+      <x>50</x>
+      <y>70</y>
       <width>47</width>
       <height>51</height>
      </rect>
@@ -277,8 +310,8 @@
    <widget class="QLabel" name="movie_gen_loading">
     <property name="geometry">
      <rect>
-      <x>375</x>
-      <y>355</y>
+      <x>380</x>
+      <y>425</y>
       <width>31</width>
       <height>31</height>
      </rect>
@@ -300,7 +333,7 @@
     <property name="geometry">
      <rect>
       <x>50</x>
-      <y>189</y>
+      <y>220</y>
       <width>431</width>
       <height>41</height>
      </rect>
@@ -314,15 +347,25 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="edit_msheetid"/>
+      <widget class="QLineEdit" name="edit_msheetid">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
    <widget class="QPushButton" name="btn_load_sheet">
     <property name="geometry">
      <rect>
-      <x>496</x>
-      <y>165</y>
+      <x>490</x>
+      <y>200</y>
       <width>75</width>
       <height>31</height>
      </rect>
@@ -334,8 +377,8 @@
    <widget class="QLabel" name="movie_sheet_loading">
     <property name="geometry">
      <rect>
-      <x>584</x>
-      <y>165</y>
+      <x>580</x>
+      <y>200</y>
       <width>30</width>
       <height>30</height>
      </rect>
@@ -360,7 +403,7 @@
     <property name="geometry">
      <rect>
       <x>170</x>
-      <y>264</y>
+      <y>320</y>
       <width>291</width>
       <height>16</height>
      </rect>
