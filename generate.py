@@ -1562,7 +1562,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
         pdf.set_left_margin(30)
 
     pdf.output(f"{sheetName}.pdf")
-    return {"status": 0, "msg": "Success"}
+    return {"status": MSG_SUCCESS, "msg": "Success"}
 
 def load_spreadsheet_data(wsheetId, msheetId):
     worksheet = getGoogleSheetService().spreadsheets()
@@ -1573,10 +1573,10 @@ def load_spreadsheet_data(wsheetId, msheetId):
             sheet_names.append(sheet['properties']['title'])
         try:
             worksheet.get(spreadsheetId=msheetId).execute()
-            return {"status": 0, "msg": "Success", "data": sheet_names}
+            return {"status": MSG_SUCCESS, "msg": "Success", "data": sheet_names}
         except:
-            return {"status": -1, "msg": "The mastersheet ID is not valid."}
+            return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
     except:
-        return {"status": -1, "msg": "The worksheet ID is not valid."}
+        return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
     
-create_pdf(wsheetId="1ta2t7cQarx6dzacKHLevtYYOsnV_gei9N2z7lHvlhLs", sheetName="Master Heidi Flys", msheetId="18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs", genType=0)
+# create_pdf(wsheetId="1ta2t7cQarx6dzacKHLevtYYOsnV_gei9N2z7lHvlhLs", sheetName="Master Heidi Flys", msheetId="18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs", genType=0)
