@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
-from constants import MSG_SUCCESS, MSG_WARNING, MSG_ERROR, showMessageBox, getProjectPath
+from constants import MSG_SUCCESS, MSG_WARNING, MSG_ERROR, showMessageBox
 from generate import create_pdf, load_spreadsheet_data
 
 try:

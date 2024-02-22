@@ -1,11 +1,7 @@
-from selenium.webdriver import Chrome
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
-from selenium.webdriver.common.action_chains import ActionChains
 from fpdf import FPDF, XPos, YPos, Align
 from constants import *
 import time, math, os, json
