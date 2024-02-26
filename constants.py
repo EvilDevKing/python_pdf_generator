@@ -125,7 +125,7 @@ def get2DigitsFloatValue(input):
     return float('%.2f' % float(input))
 
 def sortByRate(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: float(x[1][:-1]), reverse=True)
+    sorted_arr = sorted(arr, key=lambda x: custom_key(x, 1), reverse=True)
     if genType == 0:
         cutted_arr = sorted_arr[:10]
         last_element = cutted_arr[-1]
@@ -146,12 +146,33 @@ def sortByCoi(arr, genType):
             if v[4] == last_element[4]:
                 cutted_arr.append(v)
             else: break
-        return cutted_arr
+        filtered_arr = [x for x in cutted_arr if x[4].strip() != "0.00%"]
+        if len(filtered_arr) == 0:
+            return sortByVariant(cutted_arr, genType)
+        else:
+            return filtered_arr
+    else:
+        return sorted_arr
+    
+def sortByCoiForUnrated(arr, genType):
+    sorted_arr = sorted(arr, key=lambda x: float(x[4][:-1]), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[4] == last_element[4]:
+                cutted_arr.append(v)
+            else: break
+        filtered_arr = [x for x in cutted_arr if x[4].strip() != "0.00%"]
+        if len(filtered_arr) == 0:
+            return sortByVariant(cutted_arr, genType)
+        else:
+            return cutted_arr
     else:
         return sorted_arr
 
 def sortByVariant(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: float(x[2]), reverse=True)
+    sorted_arr = sorted(arr, key=lambda x: custom_key(x, 2), reverse=True)
     if genType == 0:
         cutted_arr = sorted_arr[:10]
         last_element = cutted_arr[-1]
@@ -173,19 +194,13 @@ def sortByIndex(arr, ind):
         else: break
     return cutted_arr
 
-def sortGrade(value):
-    if value == 'A+':
-        return 0
-    elif value == 'A':
-        return 1
-    elif value == 'A-':
-        return 2
-    elif value == 'B':
-        return 3
-    elif value == 'B-':
-        return 4
+def custom_key(item, ind):
+    if item[ind] == "N/A":
+        return float('0')
+    elif item[ind] == "":
+        return float('0')
     else:
-        return 5
+        return float(item[ind].replace("%",""))
     
 def getJsonDataOfStallion(data):
     jsonObj = {}
