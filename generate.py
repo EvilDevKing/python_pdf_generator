@@ -206,27 +206,27 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
     master_stallion_data = worksheet.values().get(spreadsheetId=msheetId, range=f"Stallion master pedigree!A2:AF").execute().get('values')
     # Ancestor part
     acol_values = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!A:A").execute().get('values')
-    # try:
     ind_anc = acol_values.index(["Ancestors"])+1
     tmp_anc_top_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!F{ind_anc}:Y").execute().get('values')
     anc_top_data = []
     anc_pedigree_data = []
-    for v in tmp_anc_top_data:
-        if len(v) == 0: break
-        if v[0] == "Ancestors": continue
-        if v[0] == "Total":
-            anc_pedigree_data = v
-        else:
-            filtered_sire = [sire for sire in master_stallion_data if sire[0].lower() == v[0].lower()]
-            if len(filtered_sire) == 0:
-                anc_top_data.append([v[0], v[1], v[17], get2DigitsStringValue(v[19]), ""])
+    if tmp_anc_top_data != None:
+        for v in tmp_anc_top_data:
+            if len(v) == 0: break
+            if v[0] == "Ancestors": continue
+            if v[0] == "Total":
+                anc_pedigree_data = v
             else:
-                if len(filtered_sire[0]) == 32:
-                    ibco_val = filtered_sire[0][-1]
+                filtered_sire = [sire for sire in master_stallion_data if sire[0].lower() == v[0].lower()]
+                if len(filtered_sire) == 0:
+                    anc_top_data.append([v[0], v[1], v[17], get2DigitsStringValue(v[19]), ""])
                 else:
-                    ibco_val = "0"
-                ibco_val = get2DigitsStringValue(ibco_val) + "%"
-                anc_top_data.append([v[0], v[1], v[17], get2DigitsStringValue(v[19]), ibco_val])
+                    if len(filtered_sire[0]) == 32:
+                        ibco_val = filtered_sire[0][-1]
+                    else:
+                        ibco_val = "0"
+                    ibco_val = get2DigitsStringValue(ibco_val) + "%"
+                    anc_top_data.append([v[0], v[1], v[17], get2DigitsStringValue(v[19]), ibco_val])
     
     # Stallion part
     fcol_values = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!F:F").execute().get('values')
