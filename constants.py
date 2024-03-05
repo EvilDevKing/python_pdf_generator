@@ -104,7 +104,7 @@ def getPedigreeDataFromTable(table):
 
 def getLetterGradeBy(g_sire, g_damssire, g_damssire2, g_damssire3):
     letter_grade_constants = {"A+": 5, "A": 4, "A-": 3, "B": 2, "B-": 1}
-    sum_grades = letter_grade_constants[g_sire] + letter_grade_constants[g_damssire] + letter_grade_constants[g_damssire2] + letter_grade_constants[g_damssire3]
+    sum_grades = (letter_grade_constants[g_sire] if g_sire != None else 0) + (letter_grade_constants[g_damssire] if g_damssire != None else 0) + (letter_grade_constants[g_damssire2] if g_damssire2 != None else 0) + letter_grade_constants[g_damssire3]
     avg_grade_value = get2DigitsFloatValue(float(sum_grades / 4))
     final_grade_value = math.ceil(avg_grade_value)
     if final_grade_value >= 5:

@@ -1,8 +1,8 @@
-import sys, os
+import sys
 from PyQt5 import uic
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtGui import QMovie
+from PyQt5.QtCore import QThreadPool, QObject, pyqtSignal, pyqtSlot, QRunnable
 
 from constants import MSG_SUCCESS, MSG_WARNING, MSG_ERROR, showMessageBox
 from generate import create_pdf, load_spreadsheet_data
@@ -53,8 +53,8 @@ class MainWindow(QMainWindow):
             uic.loadUi('assets/main.ui', self)
             self.loading_sheet = QMovie("assets/images/loading.gif")
             self.loading_gen = QMovie("assets/images/loading.gif")
-            # self.edit_wsheetid.setText("1ta2t7cQarx6dzacKHLevtYYOsnV_gei9N2z7lHvlhLs")
-            # self.edit_msheetid.setText("18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs")
+            self.edit_wsheetid.setText("1ta2t7cQarx6dzacKHLevtYYOsnV_gei9N2z7lHvlhLs")
+            self.edit_msheetid.setText("18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs")
 
             self.btn_gen.clicked.connect(self.performGeneration)
             self.btn_load_sheet.clicked.connect(self.performLoadSheet)
