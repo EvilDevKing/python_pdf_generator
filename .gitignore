@@ -1,4 +1,6 @@
 *.pdf
 *.spec
+*.lock
 dist
 build
+__pycache__

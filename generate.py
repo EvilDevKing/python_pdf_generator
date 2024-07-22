@@ -9,8 +9,9 @@ import time, math, re
 cur_dir = getProjectPath()
 
 class CustomPDF(FPDF):
-    def __init__(self, orientation, unit, format):
+    def __init__(self, orientation, unit, format, broodmare):
         super().__init__(orientation, unit, format)
+        self.isBroodmare = broodmare
 
     def header(self):
         if self.page_no() != 1:
@@ -21,7 +22,7 @@ class CustomPDF(FPDF):
             self.set_font('Helvetica', '', 12)
             self.set_text_color(128, 128, 128)
             self.cell(400)
-            self.cell(0, 20, 'Stallion Suggestions Report', new_x=XPos.RIGHT, new_y=YPos.TOP)
+            self.cell(0, 20, f'{"Broodmare" if self.isBroodmare else "Stallion"} Suggestions Report', new_x=XPos.RIGHT, new_y=YPos.TOP)
 
             # # Line break
             self.ln(20)
@@ -163,9 +164,19 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
     v_sum = get2DigitsStringValue(float(v_sire) + float(v_damssire) + float(v_damssire2) + float(v_damssire3))
 
     baby_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!A3:R3").execute().get('values')
-    tier1_filter_label = baby_data[0][5] + ", " + baby_data[0][7]
-    tier3_filter_label = baby_data[0][9]
-    tier4_filter_label = baby_data[0][14] + ", " + baby_data[0][15] + ", " + baby_data[0][16] + ", " + baby_data[0][17]
+    if baby_data is None:
+        print("The sheet is empty.")
+        return
+    isBasedOnSire = True
+    try:
+        tier1_filter_label = baby_data[0][5] + ", " + baby_data[0][7]
+        tier3_filter_label = baby_data[0][9]
+        tier4_filter_label = baby_data[0][14] + ", " + baby_data[0][15] + ", " + baby_data[0][16] + ", " + baby_data[0][17]
+    except:
+        tier1_filter_label = baby_data[0][2] + ", " + baby_data[0][4] + ", " + baby_data[0][6]
+        tier3_filter_label = baby_data[0][8]
+        tier4_filter_label = baby_data[0][10] + ", " + baby_data[0][11] + ", " + baby_data[0][12] + ", " + baby_data[0][13]
+        isBasedOnSire = False
 
     tier1_filter_label = re.sub(r'\s+', ' ', tier1_filter_label)
     tier3_filter_label = re.sub(r'\s+', ' ', tier3_filter_label)
@@ -173,6 +184,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
     pivot_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!U4:AD").execute().get('values')
     tier_suggestions = dict()
+    isBroodmareData = False
     tier_label = ""
     for pd in pivot_data:
         if len(pd) == 0:
@@ -181,6 +193,8 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
             if tier_label != pd[0].strip():
                 tier_label = pd[0]
             tier_suggestions[tier_label] = []
+        if pd[9].strip() == "N/A":
+            isBroodmareData = True
         tier_suggestions[tier_label].append([pd[2], pd[6], pd[7], pd[8], pd[9]])
 
     tier1_sugs = []
@@ -205,11 +219,14 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
     master_stallion_data = worksheet.values().get(spreadsheetId=msheetId, range=f"Stallion master pedigree!A2:AF").execute().get('values')
     # Ancestor part
-    acol_values = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!A:A").execute().get('values')
-    ind_anc = acol_values.index(["Ancestors"])+1
-    tmp_anc_top_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!F{ind_anc}:Y").execute().get('values')
     anc_top_data = []
     anc_pedigree_data = []
+    acol_values = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!A:A").execute().get('values')
+    try:
+        ind_anc = acol_values.index(["Ancestors"])+1
+        tmp_anc_top_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{sheetName}!F{ind_anc}:Y").execute().get('values')
+    except:
+        tmp_anc_top_data = None
     if tmp_anc_top_data != None:
         for v in tmp_anc_top_data:
             if len(v) == 0: break
@@ -243,7 +260,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
     #################                        ###################
     ############################################################
     lmargin = 20
-    pdf = CustomPDF(orientation='P', unit='pt', format='Letter')
+    pdf = CustomPDF(orientation='P', unit='pt', format='Letter', broodmare=isBroodmareData)
     pdf.alias_nb_pages()
 
     ################# page 1 #################
@@ -257,7 +274,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
     pdf.set_font('Times', '', 35)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(120)
-    pdf.multi_cell(w=200, h=50, text="Stallion Suggestions", align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.multi_cell(w=200, h=50, text=f"{'Broodmare' if isBroodmareData else 'Stallion'} Suggestions", align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     pdf.ln(320)
     pdf.set_font('Times', '', 35)
@@ -378,7 +395,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
     pdf.set_font('Times', '', 15)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(lmargin+10)
-    pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {'Stallion' if isBroodmareData else pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
     pdf.set_font('Times', '', 10)
     pdf.set_text_color(0, 0, 0)
@@ -732,7 +749,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
         pdf.add_page()
         pdf.set_line_width(2)
         pdf.set_fill_color(r=255, g=255, b=255)
-        pdf.rect(x=50, y=80, w=280, h=70, style="D")
+        pdf.rect(x=50, y=80, w=280, h=90, style="D")
         pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
         pdf.ln()
@@ -748,7 +765,10 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
         pdf.set_font('Times', '', 15)
         pdf.cell(lmargin+10)
-        pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        if isBasedOnSire:
+            pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        else:
+            pdf.multi_cell(w=260, h=20, text=f"{tier4_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
         pdf.set_font('Times', '', 10)
         pdf.cell(420)
@@ -768,7 +788,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
             pdf.add_page()
             pdf.set_line_width(2)
             pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=70, style="D")
+            pdf.rect(x=50, y=80, w=280, h=90, style="D")
             pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
             pdf.ln()
@@ -784,7 +804,10 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
             pdf.set_font('Times', '', 15)
             pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            if isBasedOnSire:
+                pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            else:
+                pdf.multi_cell(w=260, h=20, text=f"{tier4_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
             pdf.set_font('Times', '', 10)
             pdf.cell(420)
@@ -822,7 +845,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
             pdf.add_page()
             pdf.set_line_width(2)
             pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=70, style="D")
+            pdf.rect(x=50, y=80, w=280, h=90, style="D")
             pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
             pdf.ln()
@@ -838,7 +861,10 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
             pdf.set_font('Times', '', 15)
             pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            if isBasedOnSire:
+                pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            else:
+                pdf.multi_cell(w=260, h=20, text=f"{tier4_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
             pdf.set_font('Times', '', 10)
             pdf.cell(420)
@@ -866,60 +892,63 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
                         row.cell(datum, padding=(8, 5, 8, 5))
 
             pdf.set_left_margin(30)
+        if not isBroodmareData:
+        ################# page (Tier 1 Suggestions sorted by Inbreeding Coefficient) #################
+            sorted_tier1_sugs = sortByCoi(tier1_sugs, genType)
+            for i in range(math.ceil(len(sorted_tier1_sugs) / 10)):
+                page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
+                if i != 0:
+                    page_label += "(CONTINUED)"
+                pdf.add_page()
+                pdf.set_line_width(2)
+                pdf.set_fill_color(r=255, g=255, b=255)
+                pdf.rect(x=50, y=80, w=280, h=90, style="D")
+                pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
-    ################# page (Tier 1 Suggestions sorted by Inbreeding Coefficient) #################
-        sorted_tier1_sugs = sortByCoi(tier1_sugs, genType)
-        for i in range(math.ceil(len(sorted_tier1_sugs) / 10)):
-            page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
-            if i != 0:
-                page_label += "(CONTINUED)"
-            pdf.add_page()
-            pdf.set_line_width(2)
-            pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=70, style="D")
-            pdf.rect(x=450, y=80, w=100, h=70, style="D")
+                pdf.ln()
+                pdf.ln()
+                pdf.set_font('Times', '', 25)
+                pdf.set_text_color(0, 0, 0)
+                pdf.cell(lmargin+10)
+                pdf.cell(w=0, h=30, text="Tier 1", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.ln()
-            pdf.ln()
-            pdf.set_font('Times', '', 25)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=30, text="Tier 1", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 60)
+                pdf.cell(420)
+                pdf.cell(w=100, h=40, text=f"{len(tier1_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 60)
-            pdf.cell(420)
-            pdf.cell(w=100, h=40, text=f"{len(tier1_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin+10)
+                if isBasedOnSire:
+                    pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                else:
+                    pdf.multi_cell(w=260, h=20, text=f"{tier4_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=10, text=f"{tier1_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 10)
+                pdf.cell(420)
+                pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 10)
-            pdf.cell(420)
-            pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(100)
 
-            pdf.ln(100)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin)
+                pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin)
-            pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(100)
+                pdf.set_left_margin(70)
+                pdf.set_line_width(0.5)
+                pdf.set_font('Times', '', 10)
+                TABLE_HEADER_DATA = [
+                    ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ]
+                TABLE_DATA = TABLE_HEADER_DATA + sorted_tier1_sugs[i*10:i*10+10]
 
-            pdf.ln(100)
-            pdf.set_left_margin(70)
-            pdf.set_line_width(0.5)
-            pdf.set_font('Times', '', 10)
-            TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
-            ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier1_sugs[i*10:i*10+10]
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(8, 5, 8, 5))
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(8, 5, 8, 5))
-
-            pdf.set_left_margin(30)
+                pdf.set_left_margin(30)
 
     ################# page (Tier 2 Suggestions sorted by Variant) #################
     if len(tier2_sugs) == 0:
@@ -1061,113 +1090,115 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
             pdf.set_left_margin(30)
 
-    ################# page (Tier 2 Suggestions sorted by Inbreeding Coefficient) #################
-        sorted_tier2_sugs = sortByCoi(tier2_sugs, genType)
-        for i in range(math.ceil(len(sorted_tier2_sugs) / 10)):
-            page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
-            if i != 0:
-                page_label += "(CONTINUED)"
-            pdf.add_page()
-            pdf.set_line_width(2)
-            pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=70, style="D")
-            pdf.rect(x=450, y=80, w=100, h=70, style="D")
+        if not isBroodmareData:
+        ################# page (Tier 2 Suggestions sorted by Inbreeding Coefficient) #################
+            sorted_tier2_sugs = sortByCoi(tier2_sugs, genType)
+            for i in range(math.ceil(len(sorted_tier2_sugs) / 10)):
+                page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
+                if i != 0:
+                    page_label += "(CONTINUED)"
+                pdf.add_page()
+                pdf.set_line_width(2)
+                pdf.set_fill_color(r=255, g=255, b=255)
+                pdf.rect(x=50, y=80, w=280, h=70, style="D")
+                pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
-            pdf.ln()
-            pdf.ln()
-            pdf.set_font('Times', '', 25)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=30, text="Tier 2", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.ln()
+                pdf.ln()
+                pdf.set_font('Times', '', 25)
+                pdf.set_text_color(0, 0, 0)
+                pdf.cell(lmargin+10)
+                pdf.cell(w=0, h=30, text="Tier 2", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 60)
-            pdf.cell(420)
-            pdf.cell(w=100, h=40, text=f"{len(tier2_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_font('Times', '', 60)
+                pdf.cell(420)
+                pdf.cell(w=100, h=40, text=f"{len(tier2_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=10, text="Stallion Alternative", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin+10)
+                pdf.cell(w=0, h=10, text="Stallion Alternative", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 10)
-            pdf.cell(420)
-            pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_font('Times', '', 10)
+                pdf.cell(420)
+                pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.ln(100)
+                pdf.ln(100)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin)
-            pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin)
+                pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.ln(100)
-            pdf.set_left_margin(70)
-            pdf.set_line_width(0.5)
-            pdf.set_font('Times', '', 10)
-            TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
-            ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier2_sugs[i*10:i*10+10]
+                pdf.ln(100)
+                pdf.set_left_margin(70)
+                pdf.set_line_width(0.5)
+                pdf.set_font('Times', '', 10)
+                TABLE_HEADER_DATA = [
+                    ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ]
+                TABLE_DATA = TABLE_HEADER_DATA + sorted_tier2_sugs[i*10:i*10+10]
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(8, 5, 8, 5))
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(8, 5, 8, 5))
 
-            pdf.set_left_margin(30)
+                pdf.set_left_margin(30)
 
-    ################# page (Tier 2 Unrated Suggestions sorted by Inbreeding Coefficient) #################
-        sorted_tier2_unrated_sugs = sortByCoiForUnrated(tier2_unrate_sugs, genType)
-        for i in range(math.ceil(len(sorted_tier2_unrated_sugs) / 10)):
-            page_label = "TOP UNRATED STALLIONS BY INBREEDING COEFFICIENT"
-            if i != 0:
-                page_label += "(CONTINUED)"
-            pdf.add_page()
-            pdf.set_line_width(2)
-            pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=70, style="D")
-            pdf.rect(x=450, y=80, w=100, h=70, style="D")
+        ################# page (Tier 2 Unrated Suggestions sorted by Inbreeding Coefficient) #################
+            if len(tier2_unrate_sugs) != 0:
+                sorted_tier2_unrated_sugs = sortByCoiForUnrated(tier2_unrate_sugs, genType)
+                for i in range(math.ceil(len(sorted_tier2_unrated_sugs) / 10)):
+                    page_label = "TOP UNRATED STALLIONS BY INBREEDING COEFFICIENT"
+                    if i != 0:
+                        page_label += "(CONTINUED)"
+                    pdf.add_page()
+                    pdf.set_line_width(2)
+                    pdf.set_fill_color(r=255, g=255, b=255)
+                    pdf.rect(x=50, y=80, w=280, h=70, style="D")
+                    pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
-            pdf.ln()
-            pdf.ln()
-            pdf.set_font('Times', '', 25)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=30, text="Tier 2", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                    pdf.ln()
+                    pdf.ln()
+                    pdf.set_font('Times', '', 25)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.cell(lmargin+10)
+                    pdf.cell(w=0, h=30, text="Tier 2", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 60)
-            pdf.cell(420)
-            pdf.cell(w=100, h=40, text=f"{len(tier2_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                    pdf.set_font('Times', '', 60)
+                    pdf.cell(420)
+                    pdf.cell(w=100, h=40, text=f"{len(tier2_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=10, text="Stallion Alternative", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                    pdf.set_font('Times', '', 15)
+                    pdf.cell(lmargin+10)
+                    pdf.cell(w=0, h=10, text="Stallion Alternative", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 10)
-            pdf.cell(420)
-            pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                    pdf.set_font('Times', '', 10)
+                    pdf.cell(420)
+                    pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.ln(100)
+                    pdf.ln(100)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin)
-            pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                    pdf.set_font('Times', '', 15)
+                    pdf.cell(lmargin)
+                    pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.ln(100)
-            pdf.set_left_margin(70)
-            pdf.set_line_width(0.5)
-            pdf.set_font('Times', '', 10)
-            TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
-            ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier2_unrated_sugs[i*10:i*10+10]
+                    pdf.ln(100)
+                    pdf.set_left_margin(70)
+                    pdf.set_line_width(0.5)
+                    pdf.set_font('Times', '', 10)
+                    TABLE_HEADER_DATA = [
+                        ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                    ]
+                    TABLE_DATA = TABLE_HEADER_DATA + sorted_tier2_unrated_sugs[i*10:i*10+10]
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(8, 5, 8, 5))
+                    with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
+                        for data_row in TABLE_DATA:
+                            row = table.row()
+                            for datum in data_row:
+                                row.cell(datum, padding=(8, 5, 8, 5))
 
-            pdf.set_left_margin(30)
+                    pdf.set_left_margin(30)
 
     ################# page (Tier 3 Suggestions sorted by Variant) #################
     if len(tier3_sugs) == 0:
@@ -1308,60 +1339,60 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
                         row.cell(datum, padding=(8, 5, 8, 5))
 
             pdf.set_left_margin(30)
+        if not isBroodmareData:
+        ################# page (Tier 3 Suggestions sorted by Inbreeding Coefficient) #################
+            sorted_tier3_sugs = sortByCoi(tier3_sugs, genType)
+            for i in range(math.ceil(len(sorted_tier3_sugs) / 10)):
+                page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
+                if i != 0:
+                    page_label += "(CONTINUED)"
+                pdf.add_page()
+                pdf.set_line_width(2)
+                pdf.set_fill_color(r=255, g=255, b=255)
+                pdf.rect(x=50, y=80, w=280, h=70, style="D")
+                pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
-    ################# page (Tier 3 Suggestions sorted by Inbreeding Coefficient) #################
-        sorted_tier3_sugs = sortByCoi(tier3_sugs, genType)
-        for i in range(math.ceil(len(sorted_tier3_sugs) / 10)):
-            page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
-            if i != 0:
-                page_label += "(CONTINUED)"
-            pdf.add_page()
-            pdf.set_line_width(2)
-            pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=70, style="D")
-            pdf.rect(x=450, y=80, w=100, h=70, style="D")
+                pdf.ln()
+                pdf.ln()
+                pdf.set_font('Times', '', 25)
+                pdf.set_text_color(0, 0, 0)
+                pdf.cell(lmargin+10)
+                pdf.cell(w=0, h=30, text="Tier 3", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.ln()
-            pdf.ln()
-            pdf.set_font('Times', '', 25)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=30, text="Tier 3", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 60)
+                pdf.cell(420)
+                pdf.cell(w=100, h=40, text=f"{len(tier3_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 60)
-            pdf.cell(420)
-            pdf.cell(w=100, h=40, text=f"{len(tier3_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin+10)
+                pdf.cell(w=0, h=10, text=f"{tier3_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=10, text=f"{tier3_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 10)
+                pdf.cell(420)
+                pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 10)
-            pdf.cell(420)
-            pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(100)
 
-            pdf.ln(100)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin)
+                pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin)
-            pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(100)
+                pdf.set_left_margin(70)
+                pdf.set_line_width(0.5)
+                pdf.set_font('Times', '', 10)
+                TABLE_HEADER_DATA = [
+                    ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ]
+                TABLE_DATA = TABLE_HEADER_DATA + sorted_tier3_sugs[i*10:i*10+10]
 
-            pdf.ln(100)
-            pdf.set_left_margin(70)
-            pdf.set_line_width(0.5)
-            pdf.set_font('Times', '', 10)
-            TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
-            ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier3_sugs[i*10:i*10+10]
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(8, 5, 8, 5))
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(8, 5, 8, 5))
-
-            pdf.set_left_margin(30)
+                pdf.set_left_margin(30)
 
     ################# page (Tier 4 Suggestions sorted by Variant) #################
     if len(tier4_sugs) == 0:
@@ -1502,60 +1533,60 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
                         row.cell(datum, padding=(8, 5, 8, 5))
 
             pdf.set_left_margin(30)
+        if not isBroodmareData:
+        ################# page (Tier 4 Suggestions sorted by Inbreeding Coefficient) #################
+            sorted_tier4_sugs = sortByCoi(tier4_sugs, genType)
+            for i in range(math.ceil(len(sorted_tier4_sugs) / 10)):
+                page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
+                if i != 0:
+                    page_label += "(CONTINUED)"
+                pdf.add_page()
+                pdf.set_line_width(2)
+                pdf.set_fill_color(r=255, g=255, b=255)
+                pdf.rect(x=50, y=80, w=280, h=90, style="D")
+                pdf.rect(x=450, y=80, w=100, h=70, style="D")
 
-    ################# page (Tier 4 Suggestions sorted by Inbreeding Coefficient) #################
-        sorted_tier4_sugs = sortByCoi(tier4_sugs, genType)
-        for i in range(math.ceil(len(sorted_tier4_sugs) / 10)):
-            page_label = "TOP STALLIONS BY INBREEDING COEFFICIENT"
-            if i != 0:
-                page_label += "(CONTINUED)"
-            pdf.add_page()
-            pdf.set_line_width(2)
-            pdf.set_fill_color(r=255, g=255, b=255)
-            pdf.rect(x=50, y=80, w=280, h=90, style="D")
-            pdf.rect(x=450, y=80, w=100, h=70, style="D")
+                pdf.ln()
+                pdf.ln()
+                pdf.set_font('Times', '', 25)
+                pdf.set_text_color(0, 0, 0)
+                pdf.cell(lmargin+10)
+                pdf.cell(w=0, h=30, text="Tier 4", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.ln()
-            pdf.ln()
-            pdf.set_font('Times', '', 25)
-            pdf.set_text_color(0, 0, 0)
-            pdf.cell(lmargin+10)
-            pdf.cell(w=0, h=30, text="Tier 4", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 60)
+                pdf.cell(420)
+                pdf.cell(w=100, h=40, text=f"{len(tier4_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 60)
-            pdf.cell(420)
-            pdf.cell(w=100, h=40, text=f"{len(tier4_sugs)}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin+10)
+                pdf.multi_cell(w=260, h=20, text=f"{tier4_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin+10)
-            pdf.multi_cell(w=260, h=20, text=f"{tier4_filter_label}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.set_font('Times', '', 10)
+                pdf.cell(420)
+                pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 10)
-            pdf.cell(420)
-            pdf.cell(w=100, h=25, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(100)
 
-            pdf.ln(100)
+                pdf.set_font('Times', '', 15)
+                pdf.cell(lmargin)
+                pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-            pdf.set_font('Times', '', 15)
-            pdf.cell(lmargin)
-            pdf.cell(w=0, h=0, text=page_label, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(100)
+                pdf.set_left_margin(70)
+                pdf.set_line_width(0.5)
+                pdf.set_font('Times', '', 10)
+                TABLE_HEADER_DATA = [
+                    ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ]
+                TABLE_DATA = TABLE_HEADER_DATA + sorted_tier4_sugs[i*10:i*10+10]
 
-            pdf.ln(100)
-            pdf.set_left_margin(70)
-            pdf.set_line_width(0.5)
-            pdf.set_font('Times', '', 10)
-            TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
-            ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier4_sugs[i*10:i*10+10]
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(8, 5, 8, 5))
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10, padding=2) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(8, 5, 8, 5))
-
-            pdf.set_left_margin(30)
+                pdf.set_left_margin(30)
 
     if len(tier1_sugs) == 0:
         ################# page (Equi-Source Score as a dam) ###################
@@ -2125,7 +2156,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
                 pdf.set_font('Times', '', 15)
                 pdf.set_text_color(0, 0, 0)
                 pdf.cell(lmargin+10)
-                pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {'Stallion' if isBroodmareData else pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
                 pdf.set_font('Times', '', 10)
                 pdf.set_text_color(0, 0, 0)
@@ -2178,7 +2209,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
             pdf.set_font('Times', '', 15)
             pdf.set_text_color(0, 0, 0)
             pdf.cell(lmargin+10)
-            pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {'Stallion' if isBroodmareData else pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
             pdf.set_font('Times', '', 10)
             pdf.set_text_color(0, 0, 0)
@@ -2304,7 +2335,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
                 pdf.set_font('Times', '', 15)
                 pdf.set_text_color(0, 0, 0)
                 pdf.cell(lmargin+10)
-                pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+                pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {'Stallion' if isBroodmareData else pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
                 pdf.set_font('Times', '', 10)
                 pdf.set_text_color(0, 0, 0)
@@ -2336,20 +2367,5 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
 
     pdf.output(f"{sheetName}.pdf")
     return {"status": MSG_SUCCESS, "msg": "Success"}
-
-def load_spreadsheet_data(wsheetId, msheetId):
-    worksheet = getGoogleSheetService().spreadsheets()
-    sheet_names = []
-    try:
-        wsheet_metadata = worksheet.get(spreadsheetId=wsheetId).execute()
-        for sheet in wsheet_metadata['sheets']:
-            sheet_names.append(sheet['properties']['title'])
-        try:
-            worksheet.get(spreadsheetId=msheetId).execute()
-            return {"status": MSG_SUCCESS, "msg": "Success", "data": sheet_names}
-        except:
-            return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
-    except:
-        return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
     
 # create_pdf(wsheetId="1ta2t7cQarx6dzacKHLevtYYOsnV_gei9N2z7lHvlhLs", sheetName="Master Heidi Flys", msheetId="18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs", genType=0)

@@ -38,6 +38,21 @@ def getGoogleSheetService():
         print(err)
         return None
     
+def load_spreadsheet_data(wsheetId, msheetId):
+    worksheet = getGoogleSheetService().spreadsheets()
+    sheet_names = []
+    try:
+        wsheet_metadata = worksheet.get(spreadsheetId=wsheetId).execute()
+        for sheet in wsheet_metadata['sheets']:
+            sheet_names.append(sheet['properties']['title'])
+        try:
+            worksheet.get(spreadsheetId=msheetId).execute()
+            return {"status": MSG_SUCCESS, "msg": "Success", "data": sheet_names}
+        except:
+            return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
+    except:
+        return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
+    
 def getChromeDriver():
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--headless")
@@ -123,6 +138,11 @@ def get2DigitsStringValue(input):
 
 def get2DigitsFloatValue(input):
     return float('%.2f' % float(input))
+
+def getPositionByPercent(fval, sval, percent):
+    diff = sval - fval
+    result = int((percent / 100) * diff)
+    return fval + result
 
 def sortByRate(arr, genType):
     sorted_arr = sorted(arr, key=lambda x: custom_key(x, 1), reverse=True)

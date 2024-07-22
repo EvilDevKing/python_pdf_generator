@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtGui import QMovie
 from PyQt5.QtCore import QThreadPool, QObject, pyqtSignal, pyqtSlot, QRunnable
 
-from constants import MSG_SUCCESS, MSG_WARNING, MSG_ERROR, showMessageBox
-from generate import create_pdf, load_spreadsheet_data
+from constants import MSG_SUCCESS, MSG_WARNING, MSG_ERROR, showMessageBox, load_spreadsheet_data
+import generate, generate2
 
 try:
     from ctypes import windll  # Only exists on Windows.
@@ -23,13 +23,25 @@ class Gen(QRunnable):
         super().__init__()
         self.msheetId = msheetId
         self.wsheetId = wsheetId
-        self.sheetName = sheetName
+        self.wsheetName = sheetName
         self.genType = genType
         self.signal = Signals()
 
     @pyqtSlot()
     def run(self):
-        data = create_pdf(self.wsheetId, self.sheetName, self.msheetId, self.genType)
+        data = generate.create_pdf(self.wsheetId, self.wsheetName, self.msheetId, self.genType)
+        self.signal.completed.emit(data)
+        
+class Gen2(QRunnable):
+    def __init__(self, msheetId, wsheetId, sheetName):
+        super().__init__()
+        self.msheetId = msheetId
+        self.wsheetId = wsheetId
+        self.wsheetName = sheetName
+        self.signal = Signals()
+    @pyqtSlot()
+    def run(self):
+        data = generate2.create_pdf(self.wsheetId, self.wsheetName, self.msheetId)
         self.signal.completed.emit(data)
 
 ####### Thread for load spreadsheet data by sheetId ########
@@ -58,13 +70,21 @@ class MainWindow(QMainWindow):
 
             self.btn_gen.clicked.connect(self.performGeneration)
             self.btn_load_sheet.clicked.connect(self.performLoadSheet)
+            self.combo_version_names.currentTextChanged.connect(self.onVersionChanged)
         except:
             showMessageBox("Please check <assets/main.ui> file.", MSG_ERROR)
+            
+    def onVersionChanged(self, value):
+        if value == "v1.0":
+            self.combo_gen_type.setEnabled(True)
+        else:
+            self.combo_gen_type.setEnabled(False)
 
     def performLoadSheet(self):
         self.btn_load_sheet.setEnabled(False)
         self.combo_sheet_names.setEnabled(False)
         self.combo_gen_type.setEnabled(False)
+        self.combo_version_names.setEnabled(False)
         self.btn_gen.setEnabled(False)
         self.combo_sheet_names.clear()
 
@@ -75,9 +95,13 @@ class MainWindow(QMainWindow):
         self.msheetId = self.edit_msheetid.text()
         if self.wsheetId.strip() == "":
             showMessageBox("Input or copy and paste your work spreadsheet ID.", MSG_WARNING)
+            self.movie_sheet_loading.clear()
+            self.btn_load_sheet.setEnabled(True)
             return
         if self.msheetId.strip() == "":
             showMessageBox("Input or copy and paste your master spreadsheet ID.", MSG_WARNING)
+            self.movie_sheet_loading.clear()
+            self.btn_load_sheet.setEnabled(True)
             return
 
         pool = QThreadPool.globalInstance()
@@ -86,26 +110,45 @@ class MainWindow(QMainWindow):
         pool.start(loadSS)
 
     def performGeneration(self):
-        self.genType = self.combo_gen_type.currentText()
-        if self.genType == "Top10":
-            gen_type = 0
+        self.version = self.combo_version_names.currentText()
+        if self.version == "v1.0":
+            self.genType = self.combo_gen_type.currentText()
+            if self.genType == "Top10":
+                gen_type = 0
+            else:
+                gen_type = 1
+            self.sheetName = self.combo_sheet_names.currentText()
+            self.movie_gen_loading.setMovie(self.loading_gen)
+            self.loading_gen.start()
+
+            self.btn_load_sheet.setEnabled(False)
+            self.edit_wsheetid.setEnabled(False)
+            self.edit_msheetid.setEnabled(False)
+            self.combo_sheet_names.setEnabled(False)
+            self.combo_version_names.setEnabled(False)
+            self.combo_gen_type.setEnabled(False)
+            self.btn_gen.setEnabled(False)
+
+            pool = QThreadPool.globalInstance()
+            gen = Gen(self.msheetId, self.wsheetId, self.sheetName, gen_type)
+            gen.signal.completed.connect(self.updateLoadingGen)
+            pool.start(gen)
         else:
-            gen_type = 1
-        self.sheetName = self.combo_sheet_names.currentText()
-        self.movie_gen_loading.setMovie(self.loading_gen)
-        self.loading_gen.start()
-
-        self.btn_load_sheet.setEnabled(False)
-        self.edit_wsheetid.setEnabled(False)
-        self.edit_msheetid.setEnabled(False)
-        self.combo_sheet_names.setEnabled(False)
-        self.combo_gen_type.setEnabled(False)
-        self.btn_gen.setEnabled(False)
-
-        pool = QThreadPool.globalInstance()
-        gen = Gen(self.msheetId, self.wsheetId, self.sheetName, gen_type)
-        gen.signal.completed.connect(self.updateLoadingGen)
-        pool.start(gen)
+            self.sheetName = self.combo_sheet_names.currentText()
+            self.movie_gen_loading.setMovie(self.loading_gen)
+            self.loading_gen.start()
+            
+            self.btn_load_sheet.setEnabled(False)
+            self.edit_wsheetid.setEnabled(False)
+            self.edit_msheetid.setEnabled(False)
+            self.combo_sheet_names.setEnabled(False)
+            self.combo_version_names.setEnabled(False)
+            self.btn_gen.setEnabled(False)
+            
+            pool = QThreadPool.globalInstance()
+            gen2 = Gen2(self.msheetId, self.wsheetId, self.sheetName)
+            gen2.signal.completed.connect(self.updateLoadingGen)
+            pool.start(gen2)
 
     def updateLoadingSS(self, res):
         self.loading_sheet.stop()
@@ -114,10 +157,12 @@ class MainWindow(QMainWindow):
         if res["status"] == MSG_SUCCESS:
             self.combo_sheet_names.addItems(res["data"])
             self.combo_sheet_names.setEnabled(True)
+            self.combo_version_names.setEnabled(True)
             self.combo_gen_type.setEnabled(True)
             self.btn_gen.setEnabled(True)
         else:
             self.combo_sheet_names.setEnabled(False)
+            self.combo_version_names.setEnabled(False)
             self.combo_gen_type.setEnabled(False)
             self.btn_gen.setEnabled(False)
             showMessageBox(res["msg"], res["status"])
