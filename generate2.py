@@ -387,6 +387,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.write_html("<p line-height='0.3'>4 of those top 10 progeny are ridden by professionals and the other 6 are ridden by amateurs</p>")
     pdf.write_html("<p line-height='0.3'>Resulting EquiSource Score variable: 11.0 or A+</p>")
     pdf.ln(10)
+    
     pdf.cell(lmargin)
     pdf.write_html("<p line-height='0.3'>Stallion B:</p>")
     pdf.write_html("<p line-height='0.3'>20 total progeny across multiple events</p>")
