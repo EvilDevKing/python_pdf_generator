@@ -111,19 +111,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     damssire3_name = pedigree_dict["pedigree"][21]
 
     worksheet = getGoogleSheetService().spreadsheets()
-    base_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{wsheetName}!B4:S").execute().get('values')
+    base_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{wsheetName}!B4:C").execute().get('values')
+    base_data2 = worksheet.values().get(spreadsheetId=msheetId, range="1d crosses!B2:C").execute().get('values')
     tier1_basedata = []
-    tier2_basedata = worksheet.values().get(spreadsheetId=msheetId, range="1d crosses!B2:C").execute().get('values')
+    tier2_basedata = []
     tier3_basedata = []
     tier4_basedata = []
-    for bd in base_data:
-        if bd[0] == "": break
-        if bd[17] == "1":
-            tier1_basedata.append([bd[0], bd[1]])
-        elif bd[17] == "3":
-            tier3_basedata.append([bd[0], bd[1]])
-        elif bd[17] == "4":
-            tier4_basedata.append([bd[0], bd[1]])
     
     sire_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!BA2:BE").execute().get('values')
     sire_unique_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!AN2:AO").execute().get('values')
@@ -214,26 +207,43 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             if tier_label != pd[0].strip():
                 tier_label = pd[0]
             tier_suggestions[tier_label] = []
-        tier_suggestions[tier_label].append([pd[2], pd[6], pd[7], pd[8], pd[9]])
+        tier_suggestions[tier_label].append([pd[1], pd[2], pd[6], pd[7], pd[8], pd[9]])
 
     tier1_sugs = []
     tier2_sugs = []
     tier3_sugs = []
     tier4_sugs = []
     if "tier 1" in tier_suggestions.keys():
-        
         tier1_sugs = tier_suggestions["tier 1"]
     if "tier 2" in tier_suggestions.keys():
         temp_tier2_sugs = tier_suggestions["tier 2"]
         for v in temp_tier2_sugs:
-            if v[1].strip() == "%" and v[2].strip() == "" and v[3].strip() == "":
-                tier2_sugs.append([v[0], "N/A", "N/A", "N/A", v[4]])
+            if v[2].strip() == "%" and v[3].strip() == "" and v[4].strip() == "":
+                tier2_sugs.append([v[0], v[1], "N/A", "N/A", "N/A", v[5]])
             else:
                 tier2_sugs.append(v)
     if "tier 3" in tier_suggestions.keys():
         tier3_sugs = tier_suggestions["tier 3"]
     if "tier 4" in tier_suggestions.keys():
         tier4_sugs = tier_suggestions["tier 4"]
+        
+    for bd in base_data:
+        if len(bd) == 0: break
+        for sug in tier1_sugs:
+            if bd[1].lower() == sug[1].lower():
+                tier1_basedata.append(bd)
+        for sug in tier3_sugs:
+            if bd[1].lower() == sug[1].lower():
+                tier3_basedata.append(bd)
+        for sug in tier3_sugs:
+            if bd[1].lower() == sug[1].lower():
+                tier4_basedata.append(bd)
+                
+    for bd in base_data2:
+        if len(bd) < 2: continue
+        for sug in tier2_sugs:
+            if bd[1].lower() == sug[1].lower():
+                tier2_basedata.append(bd)
     
     browser.quit()
     
@@ -405,7 +415,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.set_text_color(0, 0, 0)
     pdf.cell(773)
     pdf.cell(w=22, h=20, text=v_sum, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    # pdf.cell(w=22, h=20, text="108.24", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     
     pdf.ln()
     
@@ -416,36 +425,30 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
 
     pdf.set_font('Times', '', 45)
     pdf.set_text_color(grade_color[0], grade_color[1], grade_color[2])
-    # pdf.set_text_color(0, 255, 0)
     pdf.cell(360)
     pdf.cell(w=90, h=50, text=letter_grade, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    # pdf.cell(w=90, h=50, text="A+", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_font('Times', '', 13)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(lmargin+10)
     pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    # pdf.cell(w=280, h=10, text="2018 Mare", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
     pdf.set_font('Times', '', 9)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(360)
     pdf.cell(w=90, h=25, text=f"VARIANT = {v_sum}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    # pdf.cell(w=90, h=25, text=f"VARIANT = 108.24", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_line_width(0.5)
     pdf.ln(92)
     
     # MMM
     anc_mmm = pedigree_dict["pedigree"][0]
-    # anc_mmm = "1"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=254, w=100, h=22, style="D")
     # MMMM
     anc_mmmm = pedigree_dict["pedigree"][1]
-    # anc_mmmm = "2"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mmmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -453,7 +456,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(16)
     # MM
     anc_mm = pedigree_dict["pedigree"][2]
-    # anc_mm = "3"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_mm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -461,14 +463,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # MMF
     anc_mmf = pedigree_dict["pedigree"][3]
-    # anc_mmf = "4"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mmf, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=285, w=100, h=22, style="D")
     # MMFM
     anc_mmfm = pedigree_dict["pedigree"][4]
-    # anc_mmfm = "5"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mmfm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -476,7 +476,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # M
     anc_m = pedigree_dict["pedigree"][5]
-    # anc_m = "6"
     pdf.cell(20)
     pdf.cell(w=100, h=0, text=anc_m, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(155, 203, 244)
@@ -484,14 +483,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # MFM
     anc_mfm = pedigree_dict["pedigree"][6]
-    # anc_mfm = "7"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mfm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=315, w=100, h=22, style="D")
     # MFMM
     anc_mfmm = pedigree_dict["pedigree"][7]
-    # anc_mfmm = "8"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mfmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -499,7 +496,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # MF
     anc_mf = pedigree_dict["pedigree"][8]
-    # anc_mf = "9"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_mf, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -507,14 +503,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # MFF
     anc_mff = pedigree_dict["pedigree"][9]
-    # anc_mff = "10"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mff, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=345, w=100, h=22, style="D")
     # MFFM
     anc_mffm = pedigree_dict["pedigree"][10]
-    # anc_mffm = "11"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mffm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.set_draw_color(0, 0, 0)
@@ -522,14 +516,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(30)
     # FMM
     anc_fmm = pedigree_dict["pedigree"][11]
-    # anc_fmm = "12"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_fmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=375, w=100, h=22, style="D")
     # FMMM
     anc_fmmm = pedigree_dict["pedigree"][12]
-    # anc_fmmm = "13"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_fmmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -537,7 +529,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # FM
     anc_fm = pedigree_dict["pedigree"][13]
-    # anc_fm = "14"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_fm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(56, 224, 225)
@@ -545,14 +536,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # FMF
     anc_fmf = pedigree_dict["pedigree"][14]
-    # anc_fmf = "15"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_fmf, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=405, w=100, h=22, style="D")
     # FMFM
     anc_fmfm = pedigree_dict["pedigree"][15]
-    # anc_fmfm = "16"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_fmfm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -560,7 +549,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # F
     anc_f = pedigree_dict["pedigree"][16]
-    # anc_f = "17"
     pdf.cell(20)
     pdf.cell(w=100, h=0, text=anc_f, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -568,14 +556,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # FFM
     anc_ffm = pedigree_dict["pedigree"][17]
-    # anc_ffm = "18"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_ffm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(254, 32, 253)
     pdf.rect(x=270, y=435, w=100, h=22, style="D")
     # FFMM
     anc_ffmm = pedigree_dict["pedigree"][18]
-    # anc_ffmm = "19"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_ffmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -583,7 +569,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # FF
     anc_ff = pedigree_dict["pedigree"][19]
-    # anc_ff = "20"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_ff, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -591,14 +576,12 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.ln(15)
     # FFF
     anc_fff = pedigree_dict["pedigree"][20]
-    # anc_fff = "21"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_fff, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=465, w=100, h=22, style="D")
     # FFFM
     anc_fffm = pedigree_dict["pedigree"][21]
-    # anc_fffm = "22"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_fffm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(250, 47, 190)
@@ -611,8 +594,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        (sire_name, v_sire, oned_sire, unique_sire),
-        # ("The Money Depot", "3.32", "28", "7"),
+        (sire_name, v_sire, oned_sire, unique_sire)
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -626,8 +608,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("Dam's Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        (damssire_name, v_damssire, oned_damssire, unique_damssire),
-        # ("Dash Ta Fame", "98.16", "1144", "251"),
+        (damssire_name, v_damssire, oned_damssire, unique_damssire)
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -641,8 +622,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("2nd Dam's Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        (damssire2_name, v_damssire2, oned_damssire2, unique_damssire2),
-        # ("Murrtheblurr", "3.05", "27", "7"),
+        (damssire2_name, v_damssire2, oned_damssire2, unique_damssire2)
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -656,8 +636,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("3rd Dam's Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        (damssire3_name, v_damssire3, oned_damssire3, unique_damssire3),
-        # ("Dr Kirk", "3.94", "42", "9"),
+        (damssire3_name, v_damssire3, oned_damssire3, unique_damssire3)
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -669,237 +648,518 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.set_left_margin(0)
                 
     ################# page 6 (Tier 1 Suggestions) #################
-    pdf.add_page()
-    pdf.set_line_width(2)
-    pdf.set_draw_color(0)
-    pdf.set_fill_color(r=255, g=255, b=255)
-    pdf.rect(x=50, y=100, w=240, h=60, style="D")
-    pdf.rect(x=360, y=100, w=90, h=60, style="D")
-    pdf.rect(x=520, y=100, w=90, h=60, style="D")
-    pdf.rect(x=680, y=100, w=90, h=60, style="D")
-    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+    if len(tier1_sugs) == 0:
+        pdf.add_page()
+        pdf.set_line_width(2)
+        pdf.set_draw_color(0)
+        pdf.set_fill_color(r=255, g=255, b=255)
+        pdf.rect(x=50, y=100, w=240, h=60, style="D")
+        pdf.rect(x=360, y=100, w=90, h=60, style="D")
+        pdf.rect(x=520, y=100, w=90, h=60, style="D")
+        pdf.rect(x=680, y=100, w=90, h=60, style="D")
+        pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
-    pdf.ln(65)
-    pdf.set_font('Times', '', 22)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(lmargin+65)
-    pdf.cell(w=0, h=30, text="Tier 1 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(360)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text=str(len(tier1_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(520)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(680)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="140", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(840)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.ln()
-    pdf.set_font_size(10)
-    pdf.cell(360)
-    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(520)
-    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(680)
-    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(840)
-    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.set_line_width(0.5)
-    pdf.set_xy(5, 215)
-    pdf.set_left_margin(70)
-    pdf.set_draw_color(0)
-    pdf.set_fill_color(255, 255, 255) # Back to white background
-    TABLE_DATA = (
-        ("Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"),
-        # (sire_name, v_sire, oned_sire, unique_sire),
-        ("A Streak Of Fling", "44%", "37.78", "A+", "0.00%"),
-        ("Epic Leader", "50%", "24.89", "A+", "0.00%"),
-        ("BHR Frenchies Socks", "36%", "16.00", "A+", "0.00%"),
-        ("Judge Cash", "47%", "10.28", "A+", "0.00%"),
-        ("Guys Canyon Moon", "74%", "9.58", "A", "0.00%"),
-        ("Eddie Stinson", "44%", "40.43", "A+", "6.25%"),
-        ("JL Dash Ta Heaven", "49%", "36.01", "A+", "6.25%"),
-        ("French Streaktovegas", "50%", "18.91", "A+", "0.00%"),
-        ("Blazin Jetolena", "49%", "27.96", "A+", "1.56%"),
-        ("Heavenly Firewater", "49%", "6.84", "A", "3.13%")
-    )
+        pdf.ln(65)
+        pdf.set_font('Times', '', 22)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(lmargin+65)
+        pdf.cell(w=0, h=30, text="Tier 1 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(360)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(520)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(680)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(840)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln()
+        pdf.set_font_size(10)
+        pdf.cell(360)
+        pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(520)
+        pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(680)
+        pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(840)
+        pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln(100)
 
-    with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
-        for data_row in TABLE_DATA:
-            row = table.row()
-            for datum in data_row:
-                row.cell(datum, padding=(5, 0, 5, 0))
-                
-    pdf.set_xy(5, 215)
-    pdf.set_left_margin(1070)
-    TABLE_DATA = (
-        ("Top 10 Offspring", "Sire", "Top Placings", "Earnings"),
-        # (sire_name, v_sire, oned_sire, unique_sire),
-        ("This Guy Will Moonya", "Guys Canyon Moon", "33", ""),
-        ("Streak Gypsy Streak", "A Streak Of Fling", "30", ""),
-        ("Epic Future", "Epic Leader", "30", ""),
-        ("TNR Wannaseemycancan", "Eddie Stinson", "29", ""),
-        ("KN Lil Bit Of Heaven", "JL Dash Ta Heaven", "24", ""),
-        ("Raining From Heaven", "JL Dash Ta Heaven", "14", ""),
-        ("Salty Rita", "Blazin Jetolena", "13", ""),
-        ("Mamahadafling", "A Streak Of Fling", "10", ""),
-        ("Ima Epic Burr Bug", "Epic Leader", "9", ""),
-        ("Mistys Blazin Succes", "Blazin Jetolena", "7", "")
-    )
+        pdf.set_font('Times', '', 15)
+        pdf.cell(lmargin)
+        pdf.cell(w=0, h=0, text="NO TIER 1 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        
+    else:
+        sorted_tier1_sugs = sortByOtherTiers(tier1_sugs, genType)
+        sorted_tier1_sugs = [x[1:] for x in sorted_tier1_sugs]
+        for i in range(math.ceil(len(sorted_tier1_sugs) / 10)):
+            pdf.add_page()
+            pdf.set_line_width(2)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(r=255, g=255, b=255)
+            pdf.rect(x=50, y=100, w=240, h=60, style="D")
+            pdf.rect(x=360, y=100, w=90, h=60, style="D")
+            pdf.rect(x=520, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
-    with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
-        for data_row in TABLE_DATA:
-            row = table.row()
-            for datum in data_row:
-                row.cell(datum, padding=(5, 0, 5, 0))
-    
-    pdf.set_left_margin(0)
+            pdf.ln(65)
+            pdf.set_font('Times', '', 22)
+            pdf.set_text_color(0, 0, 0)
+            pdf.cell(lmargin+65)
+            pdf.cell(w=0, h=30, text="Tier 1 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(360)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier1_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(520)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(680)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="140", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(840)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.ln()
+            pdf.set_font_size(10)
+            pdf.cell(360)
+            pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(520)
+            pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(680)
+            pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(840)
+            pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.set_line_width(0.5)
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(70)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(255, 255, 255) # Back to white background
+            
+            
+            
+            TABLE_HEADER_DATA = [
+                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+            ]
+            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier1_sugs[i*10:i*10+10]
+
+            with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                        
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(1070)
+            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
+            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier1_basedata, genType)
+
+            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                    
+            pdf.set_left_margin(0)
     
     ################# page 7 (Tier 2 Suggestions) #################
-    pdf.add_page()
-    pdf.set_line_width(2)
-    pdf.set_draw_color(0)
-    pdf.set_fill_color(r=255, g=255, b=255)
-    pdf.rect(x=50, y=100, w=240, h=60, style="D")
-    pdf.rect(x=360, y=100, w=90, h=60, style="D")
-    pdf.rect(x=520, y=100, w=90, h=60, style="D")
-    pdf.rect(x=680, y=100, w=90, h=60, style="D")
-    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+    if len(tier2_sugs) == 0:
+        pdf.add_page()
+        pdf.set_line_width(2)
+        pdf.set_draw_color(0)
+        pdf.set_fill_color(r=255, g=255, b=255)
+        pdf.rect(x=50, y=100, w=240, h=60, style="D")
+        pdf.rect(x=360, y=100, w=90, h=60, style="D")
+        pdf.rect(x=520, y=100, w=90, h=60, style="D")
+        pdf.rect(x=680, y=100, w=90, h=60, style="D")
+        pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
-    pdf.ln(65)
-    pdf.set_font('Times', '', 22)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(lmargin+65)
-    pdf.cell(w=0, h=30, text="Tier 2 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(360)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text=str(len(tier2_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(520)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="20", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(680)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="76", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(840)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="17", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.ln()
-    pdf.set_font_size(10)
-    pdf.cell(360)
-    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(520)
-    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(680)
-    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(840)
-    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
+        pdf.ln(65)
+        pdf.set_font('Times', '', 22)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(lmargin+65)
+        pdf.cell(w=0, h=30, text="Tier 2 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(360)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(520)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(680)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(840)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln()
+        pdf.set_font_size(10)
+        pdf.cell(360)
+        pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(520)
+        pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(680)
+        pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(840)
+        pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln(100)
+
+        pdf.set_font('Times', '', 15)
+        pdf.cell(lmargin)
+        pdf.cell(w=0, h=0, text="NO TIER 2 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        sorted_tier2_sugs = sortByVariant2(tier2_sugs, genType)
+        sorted_tier2_sugs = [x[1:] for x in sorted_tier2_sugs]
+        for i in range(math.ceil(len(sorted_tier2_sugs) / 10)):
+            pdf.add_page()
+            pdf.set_line_width(2)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(r=255, g=255, b=255)
+            pdf.rect(x=50, y=100, w=240, h=60, style="D")
+            pdf.rect(x=360, y=100, w=90, h=60, style="D")
+            pdf.rect(x=520, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+            pdf.ln(65)
+            pdf.set_font('Times', '', 22)
+            pdf.set_text_color(0, 0, 0)
+            pdf.cell(lmargin+65)
+            pdf.cell(w=0, h=30, text="Tier 2 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(360)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier2_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(520)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="20", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(680)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="76", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(840)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="17", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.ln()
+            pdf.set_font_size(10)
+            pdf.cell(360)
+            pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(520)
+            pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(680)
+            pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(840)
+            pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.set_line_width(0.5)
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(70)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(255, 255, 255) # Back to white background
+            
+            TABLE_HEADER_DATA = [
+                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+            ]
+            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier2_sugs[i*10:i*10+10]
+
+            with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                        
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(1070)
+            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
+            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier2_basedata, genType)
+
+            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                    
+            pdf.set_left_margin(0)
     
     
     ################# page 8 (Tier 3 Suggestions) #################
-    pdf.add_page()
-    pdf.set_line_width(2)
-    pdf.set_draw_color(0)
-    pdf.set_fill_color(r=255, g=255, b=255)
-    pdf.rect(x=50, y=100, w=240, h=60, style="D")
-    pdf.rect(x=360, y=100, w=90, h=60, style="D")
-    pdf.rect(x=520, y=100, w=90, h=60, style="D")
-    pdf.rect(x=680, y=100, w=90, h=60, style="D")
-    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+    if len(tier3_sugs) == 0:
+        pdf.add_page()
+        pdf.set_line_width(2)
+        pdf.set_draw_color(0)
+        pdf.set_fill_color(r=255, g=255, b=255)
+        pdf.rect(x=50, y=100, w=240, h=60, style="D")
+        pdf.rect(x=360, y=100, w=90, h=60, style="D")
+        pdf.rect(x=520, y=100, w=90, h=60, style="D")
+        pdf.rect(x=680, y=100, w=90, h=60, style="D")
+        pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
-    pdf.ln(65)
-    pdf.set_font('Times', '', 22)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(lmargin+65)
-    pdf.cell(w=0, h=30, text="Tier 3 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(360)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text=str(len(tier3_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(520)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="28", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(680)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="288", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(840)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="63", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.ln()
-    pdf.set_font_size(10)
-    pdf.cell(360)
-    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(520)
-    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(680)
-    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(840)
-    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
+        pdf.ln(65)
+        pdf.set_font('Times', '', 22)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(lmargin+65)
+        pdf.cell(w=0, h=30, text="Tier 3 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(360)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(520)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(680)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(840)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln()
+        pdf.set_font_size(10)
+        pdf.cell(360)
+        pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(520)
+        pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(680)
+        pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(840)
+        pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln(100)
+
+        pdf.set_font('Times', '', 15)
+        pdf.cell(lmargin)
+        pdf.cell(w=0, h=0, text="NO TIER 3 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        sorted_tier3_sugs = sortByVariant2(tier3_sugs, genType)
+        sorted_tier3_sugs = [x[1:] for x in sorted_tier3_sugs]
+        for i in range(math.ceil(len(sorted_tier3_sugs) / 10)):
+            pdf.add_page()
+            pdf.set_line_width(2)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(r=255, g=255, b=255)
+            pdf.rect(x=50, y=100, w=240, h=60, style="D")
+            pdf.rect(x=360, y=100, w=90, h=60, style="D")
+            pdf.rect(x=520, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+            pdf.ln(65)
+            pdf.set_font('Times', '', 22)
+            pdf.set_text_color(0, 0, 0)
+            pdf.cell(lmargin+65)
+            pdf.cell(w=0, h=30, text="Tier 3 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(360)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier3_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(520)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="28", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(680)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="288", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(840)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="63", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.ln()
+            pdf.set_font_size(10)
+            pdf.cell(360)
+            pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(520)
+            pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(680)
+            pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(840)
+            pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.set_line_width(0.5)
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(70)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(255, 255, 255) # Back to white background
+            
+            TABLE_HEADER_DATA = [
+                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+            ]
+            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier3_sugs[i*10:i*10+10]
+
+            with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                        
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(1070)
+            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
+            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier3_basedata, genType)
+
+            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                    
+            pdf.set_left_margin(0)
     
     ################# page 9 (Tier 4 Suggestions) #################
-    pdf.add_page()
-    pdf.set_line_width(2)
-    pdf.set_draw_color(0)
-    pdf.set_fill_color(r=255, g=255, b=255)
-    pdf.rect(x=50, y=100, w=240, h=60, style="D")
-    pdf.rect(x=360, y=100, w=90, h=60, style="D")
-    pdf.rect(x=520, y=100, w=90, h=60, style="D")
-    pdf.rect(x=680, y=100, w=90, h=60, style="D")
-    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+    if len(tier4_sugs) == 0:
+        pdf.add_page()
+        pdf.set_line_width(2)
+        pdf.set_draw_color(0)
+        pdf.set_fill_color(r=255, g=255, b=255)
+        pdf.rect(x=50, y=100, w=240, h=60, style="D")
+        pdf.rect(x=360, y=100, w=90, h=60, style="D")
+        pdf.rect(x=520, y=100, w=90, h=60, style="D")
+        pdf.rect(x=680, y=100, w=90, h=60, style="D")
+        pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
-    pdf.ln(65)
-    pdf.set_font('Times', '', 22)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(lmargin+65)
-    pdf.cell(w=0, h=30, text="Tier 4 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(360)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text=str(len(tier4_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(520)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="29", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(680)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="456", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.cell(840)
-    pdf.set_font_size(50)
-    pdf.cell(w=90, h=25, text="90", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
-    pdf.ln()
-    pdf.set_font_size(10)
-    pdf.cell(360)
-    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(520)
-    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(680)
-    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    pdf.cell(840)
-    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-    
+        pdf.ln(65)
+        pdf.set_font('Times', '', 22)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(lmargin+65)
+        pdf.cell(w=0, h=30, text="Tier 4 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(360)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(520)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(680)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(840)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln()
+        pdf.set_font_size(10)
+        pdf.cell(360)
+        pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(520)
+        pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(680)
+        pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(840)
+        pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln(100)
+
+        pdf.set_font('Times', '', 15)
+        pdf.cell(lmargin)
+        pdf.cell(w=0, h=0, text="NO TIER 4 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        sorted_tier4_sugs = sortByVariant2(tier4_sugs, genType)
+        sorted_tier4_sugs = [x[1:] for x in sorted_tier4_sugs]
+        for i in range(math.ceil(len(sorted_tier4_sugs) / 10)):
+            pdf.add_page()
+            pdf.set_line_width(2)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(r=255, g=255, b=255)
+            pdf.rect(x=50, y=100, w=240, h=60, style="D")
+            pdf.rect(x=360, y=100, w=90, h=60, style="D")
+            pdf.rect(x=520, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+            pdf.ln(65)
+            pdf.set_font('Times', '', 22)
+            pdf.set_text_color(0, 0, 0)
+            pdf.cell(lmargin+65)
+            pdf.cell(w=0, h=30, text="Tier 4 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(360)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier4_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(520)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="29", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(680)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="456", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(840)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text="90", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.ln()
+            pdf.set_font_size(10)
+            pdf.cell(360)
+            pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(520)
+            pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(680)
+            pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(840)
+            pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.set_line_width(0.5)
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(70)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(255, 255, 255) # Back to white background
+            
+            TABLE_HEADER_DATA = [
+                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+            ]
+            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier4_sugs[i*10:i*10+10]
+
+            with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                        
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(1070)
+            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
+            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier4_basedata, genType)
+
+            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                for data_row in TABLE_DATA:
+                    row = table.row()
+                    for datum in data_row:
+                        row.cell(datum, padding=(5, 0, 5, 0))
+                    
+            pdf.set_left_margin(0)
 
     pdf.output(f"{wsheetName}.pdf")
     return {"status": MSG_SUCCESS, "msg": "Success"}
     
-create_pdf(wsheetId="1h-tZdm0-UJnC09j8dYidTND1FCWRGDxkBMCmHzr1bYM", wsheetName="Mistys Money N Fame", msheetId="18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs")
+# create_pdf(wsheetId="1h-tZdm0-UJnC09j8dYidTND1FCWRGDxkBMCmHzr1bYM", wsheetName="Mistys Money N Fame", msheetId="18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs", genType=1)

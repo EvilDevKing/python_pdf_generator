@@ -145,18 +145,20 @@ def getPositionByPercent(fval, sval, percent):
     result = int((percent / 100) * diff)
     return fval + result
 
-def getGroupBySireAndCountHorse(init_data):
+def groupBySireAndCountHorse(init_data, genType):
     result_dict = defaultdict(lambda: defaultdict(int))
     
     for h, s in init_data:
-        result_dict[s][h] += 1
-        
+        result_dict[s.title()][h.title()] += 1
     result_array = []
     for s, h_cnts in result_dict.items():
         for h, cnt in h_cnts.items():
-            result_array.append([h, s, cnt])
-            
-    return result_array
+            result_array.append([h, s, str(cnt), ""])
+    result_array = sortByIndex(result_array, 2)
+    if genType == 0:
+        return result_array[:10]
+    else:
+        return result_array
 
 def sortByRate(arr, genType):
     sorted_arr = sorted(arr, key=lambda x: custom_key(x, 1), reverse=True)
@@ -218,6 +220,19 @@ def sortByVariant(arr, genType):
     else:
         return sorted_arr
     
+def sortByVariant2(arr, genType):
+    sorted_arr = sorted(arr, key=lambda x: custom_key(x, 3), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[3] == last_element[3]:
+                cutted_arr.append(v)
+            else: break
+        return cutted_arr
+    else:
+        return sorted_arr
+    
 def sortByIndex(arr, ind):
     sorted_arr = sorted(arr, key=lambda x: float(x[ind]), reverse=True)
     cutted_arr = sorted_arr[:10]
@@ -229,13 +244,13 @@ def sortByIndex(arr, ind):
     return cutted_arr
 
 def sortByOtherTiers(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: len(x.replace(" ","")), reverse=True)
-    sorted_arr = sorted(sorted_arr, key=lambda x: custom_key(x, 7), reverse=True)
+    sorted_arr = sorted(arr, key=lambda x: len(x[0].replace(" ","")), reverse=True)
+    sorted_arr = sorted(sorted_arr, key=lambda x: custom_key(x, 3), reverse=True)
     if genType == 0:
         cutted_arr = sorted_arr[:10]
         last_element = cutted_arr[-1]
         for v in sorted_arr[10:]:
-            if v[7] == last_element[7]:
+            if v[3] == last_element[3]:
                 cutted_arr.append(v)
             else: break
         return cutted_arr

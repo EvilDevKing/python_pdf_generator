@@ -156,6 +156,7 @@ class MainWindow(QMainWindow):
         self.edit_wsheetid.setEnabled(True)
         self.edit_msheetid.setEnabled(True)
         self.combo_sheet_names.setEnabled(True)
+        self.combo_version_names.setEnabled(True)
         self.combo_gen_type.setEnabled(True)
         self.btn_gen.setEnabled(True)
 
