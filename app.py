@@ -33,15 +33,16 @@ class Gen(QRunnable):
         self.signal.completed.emit(data)
         
 class Gen2(QRunnable):
-    def __init__(self, msheetId, wsheetId, sheetName):
+    def __init__(self, msheetId, wsheetId, sheetName, genType):
         super().__init__()
         self.msheetId = msheetId
         self.wsheetId = wsheetId
         self.wsheetName = sheetName
+        self.genType = genType
         self.signal = Signals()
     @pyqtSlot()
     def run(self):
-        data = generate2.create_pdf(self.wsheetId, self.wsheetName, self.msheetId)
+        data = generate2.create_pdf(self.wsheetId, self.wsheetName, self.msheetId, self.genType)
         self.signal.completed.emit(data)
 
 ####### Thread for load spreadsheet data by sheetId ########
@@ -65,20 +66,11 @@ class MainWindow(QMainWindow):
             uic.loadUi('assets/main.ui', self)
             self.loading_sheet = QMovie("assets/images/loading.gif")
             self.loading_gen = QMovie("assets/images/loading.gif")
-            # self.edit_wsheetid.setText("1ta2t7cQarx6dzacKHLevtYYOsnV_gei9N2z7lHvlhLs")
-            # self.edit_msheetid.setText("18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs")
 
             self.btn_gen.clicked.connect(self.performGeneration)
             self.btn_load_sheet.clicked.connect(self.performLoadSheet)
-            self.combo_version_names.currentTextChanged.connect(self.onVersionChanged)
         except:
             showMessageBox("Please check <assets/main.ui> file.", MSG_ERROR)
-            
-    def onVersionChanged(self, value):
-        if value == "v1.0":
-            self.combo_gen_type.setEnabled(True)
-        else:
-            self.combo_gen_type.setEnabled(False)
 
     def performLoadSheet(self):
         self.btn_load_sheet.setEnabled(False)
@@ -111,42 +103,30 @@ class MainWindow(QMainWindow):
 
     def performGeneration(self):
         self.version = self.combo_version_names.currentText()
+        self.genType = self.combo_gen_type.currentText()
+        if self.genType == "Top10":
+            gen_type = 0
+        else:
+            gen_type = 1
+        self.sheetName = self.combo_sheet_names.currentText()
+        self.movie_gen_loading.setMovie(self.loading_gen)
+        self.loading_gen.start()
+
+        self.btn_load_sheet.setEnabled(False)
+        self.edit_wsheetid.setEnabled(False)
+        self.edit_msheetid.setEnabled(False)
+        self.combo_sheet_names.setEnabled(False)
+        self.combo_version_names.setEnabled(False)
+        self.combo_gen_type.setEnabled(False)
+        self.btn_gen.setEnabled(False)
+
+        pool = QThreadPool.globalInstance()
         if self.version == "v1.0":
-            self.genType = self.combo_gen_type.currentText()
-            if self.genType == "Top10":
-                gen_type = 0
-            else:
-                gen_type = 1
-            self.sheetName = self.combo_sheet_names.currentText()
-            self.movie_gen_loading.setMovie(self.loading_gen)
-            self.loading_gen.start()
-
-            self.btn_load_sheet.setEnabled(False)
-            self.edit_wsheetid.setEnabled(False)
-            self.edit_msheetid.setEnabled(False)
-            self.combo_sheet_names.setEnabled(False)
-            self.combo_version_names.setEnabled(False)
-            self.combo_gen_type.setEnabled(False)
-            self.btn_gen.setEnabled(False)
-
-            pool = QThreadPool.globalInstance()
             gen = Gen(self.msheetId, self.wsheetId, self.sheetName, gen_type)
             gen.signal.completed.connect(self.updateLoadingGen)
             pool.start(gen)
         else:
-            self.sheetName = self.combo_sheet_names.currentText()
-            self.movie_gen_loading.setMovie(self.loading_gen)
-            self.loading_gen.start()
-            
-            self.btn_load_sheet.setEnabled(False)
-            self.edit_wsheetid.setEnabled(False)
-            self.edit_msheetid.setEnabled(False)
-            self.combo_sheet_names.setEnabled(False)
-            self.combo_version_names.setEnabled(False)
-            self.btn_gen.setEnabled(False)
-            
-            pool = QThreadPool.globalInstance()
-            gen2 = Gen2(self.msheetId, self.wsheetId, self.sheetName)
+            gen2 = Gen2(self.msheetId, self.wsheetId, self.sheetName, gen_type)
             gen2.signal.completed.connect(self.updateLoadingGen)
             pool.start(gen2)
 

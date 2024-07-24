@@ -26,7 +26,7 @@ class CustomPDF(FPDF):
             # # Line break
             self.ln(20)
 
-def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
+def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     ##########################################################
     #################                    #####################
     ################# Preparing PDF Data #####################
@@ -111,71 +111,101 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     damssire3_name = pedigree_dict["pedigree"][21]
 
     worksheet = getGoogleSheetService().spreadsheets()
+    base_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{wsheetName}!B4:S").execute().get('values')
+    tier1_basedata = []
+    tier2_basedata = worksheet.values().get(spreadsheetId=msheetId, range="1d crosses!B2:C").execute().get('values')
+    tier3_basedata = []
+    tier4_basedata = []
+    for bd in base_data:
+        if bd[0] == "": break
+        if bd[17] == "1":
+            tier1_basedata.append([bd[0], bd[1]])
+        elif bd[17] == "3":
+            tier3_basedata.append([bd[0], bd[1]])
+        elif bd[17] == "4":
+            tier4_basedata.append([bd[0], bd[1]])
+    
     sire_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!BA2:BE").execute().get('values')
+    sire_unique_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!AN2:AO").execute().get('values')
     damssire_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!BL2:BP").execute().get('values')
+    damssire_unique_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!AQ2:AR").execute().get('values')
     damssire2_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!BV2:BZ").execute().get('values')
+    damssire2_unique_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!AT2:AU").execute().get('values')
     damssire3_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!CF2:CJ").execute().get('values')
+    damssire3_unique_predicts = worksheet.values().get(spreadsheetId=msheetId, range="Prediction rating v2!AW2:AX").execute().get('values')
     
     sire_pred = [x for x in sire_predicts if str(x[0]).lower() == sire_name.replace("*","").lower()]
+    sire_unique_pred = [x for x in sire_unique_predicts if str(x[0]).lower() == sire_name.replace("*","").lower()]
     damssire_pred = [x for x in damssire_predicts if str(x[0]).lower() == damssire_name.replace("*","").lower()]
+    damssire_unique_pred = [x for x in damssire_unique_predicts if str(x[0]).lower() == damssire_name.replace("*","").lower()]
     damssire2_pred = [x for x in damssire2_predicts if str(x[0]).lower() == damssire2_name.replace("*","").lower()]
+    damssire2_unique_pred = [x for x in damssire2_unique_predicts if str(x[0]).lower() == damssire2_name.replace("*","").lower()]
     damssire3_pred = [x for x in damssire3_predicts if str(x[0]).lower() == damssire3_name.replace("*","").lower()]
+    damssire3_unique_pred = [x for x in damssire3_unique_predicts if str(x[0]).lower() == damssire3_name.replace("*","").lower()]
 
     if len(sire_pred) == 0:
+        oned_sire = 0
         v_sire = 0
         g_sire = "B-"
     else:
+        oned_sire = sire_pred[0][1]
         v_sire = sire_pred[0][3]
         g_sire = sire_pred[0][4]
         
+    if len(sire_unique_pred) == 0:
+        unique_sire = 0
+    else:
+        unique_sire = sire_unique_pred[0][1]
+        
     if len(damssire_pred) == 0:
+        oned_damssire = 0
         v_damssire = 0
         g_damssire = "B-"
     else:
+        oned_damssire = damssire_pred[0][1]
         v_damssire = damssire_pred[0][3]
         g_damssire = damssire_pred[0][4]
+        
+    if len(damssire_unique_pred) == 0:
+        unique_damssire = 0
+    else:
+        unique_damssire = damssire_unique_pred[0][1]
 
     if len(damssire2_pred) == 0:
+        oned_damssire2 = 0
         v_damssire2 = 0
         g_damssire2 = "B-"
     else:
+        oned_damssire2 = damssire2_pred[0][1]
         v_damssire2 = damssire2_pred[0][3]
         g_damssire2 = damssire2_pred[0][4]
+        
+    if len(damssire2_unique_pred) == 0:
+        unique_damssire2 = 0
+    else:
+        unique_damssire2 = damssire2_unique_pred[0][1]
 
     if len(damssire3_pred) == 0:
+        oned_damssire3 = 0
         v_damssire3 = 0
         g_damssire3 = "B-"
     else:
+        oned_damssire3 = damssire3_pred[0][1]
         v_damssire3 = damssire3_pred[0][3]
         g_damssire3 = damssire3_pred[0][4]
+        
+    if len(damssire3_unique_pred) == 0:
+        unique_damssire3 = 0
+    else:
+        unique_damssire3 = damssire3_unique_pred[0][1]
 
     grade_info = getLetterGradeBy(g_sire, g_damssire, g_damssire2, g_damssire3)
     letter_grade = grade_info["letter"]
     grade_color = grade_info["color_info"]
     v_sum = get2DigitsStringValue(float(v_sire) + float(v_damssire) + float(v_damssire2) + float(v_damssire3))
 
-    baby_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{wsheetName}!A3:R3").execute().get('values')
-    if baby_data is None:
-        print("The sheet is empty.")
-        return
-    isBasedOnSire = True
-    try:
-        tier1_filter_label = baby_data[0][5] + ", " + baby_data[0][7]
-        tier3_filter_label = baby_data[0][9]
-        tier4_filter_label = baby_data[0][14] + ", " + baby_data[0][15] + ", " + baby_data[0][16] + ", " + baby_data[0][17]
-    except:
-        tier1_filter_label = baby_data[0][2] + ", " + baby_data[0][4] + ", " + baby_data[0][6]
-        tier3_filter_label = baby_data[0][8]
-        tier4_filter_label = baby_data[0][10] + ", " + baby_data[0][11] + ", " + baby_data[0][12] + ", " + baby_data[0][13]
-        isBasedOnSire = False
-
-    tier1_filter_label = re.sub(r'\s+', ' ', tier1_filter_label)
-    tier3_filter_label = re.sub(r'\s+', ' ', tier3_filter_label)
-    tier4_filter_label = re.sub(r'\s+', ' ', tier4_filter_label)
-
     pivot_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{wsheetName}!U4:AD").execute().get('values')
     tier_suggestions = dict()
-    isBroodmareData = False
     tier_label = ""
     for pd in pivot_data:
         if len(pd) == 0:
@@ -184,22 +214,19 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
             if tier_label != pd[0].strip():
                 tier_label = pd[0]
             tier_suggestions[tier_label] = []
-        if pd[9].strip() == "N/A":
-            isBroodmareData = True
         tier_suggestions[tier_label].append([pd[2], pd[6], pd[7], pd[8], pd[9]])
 
     tier1_sugs = []
     tier2_sugs = []
-    tier2_unrate_sugs = []
     tier3_sugs = []
     tier4_sugs = []
     if "tier 1" in tier_suggestions.keys():
+        
         tier1_sugs = tier_suggestions["tier 1"]
     if "tier 2" in tier_suggestions.keys():
         temp_tier2_sugs = tier_suggestions["tier 2"]
         for v in temp_tier2_sugs:
             if v[1].strip() == "%" and v[2].strip() == "" and v[3].strip() == "":
-                tier2_unrate_sugs.append([v[0], "N/A", "N/A", "N/A", v[4]])
                 tier2_sugs.append([v[0], "N/A", "N/A", "N/A", v[4]])
             else:
                 tier2_sugs.append(v)
@@ -209,7 +236,6 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
         tier4_sugs = tier_suggestions["tier 4"]
     
     browser.quit()
-    
     
     ############################################################
     #################                        ###################
@@ -227,7 +253,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_font('Times', '', 25)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(350)
-    pdf.multi_cell(w=150, h=30, text="Stallion Suggestions", align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.multi_cell(w=150, h=30, text="Stallion Suggestions", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     pdf.ln(280)
     pdf.set_font_size(25)
@@ -238,7 +264,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_font_size(30)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(340)
-    pdf.multi_cell(w=200, h=30, text=wsheetName, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.multi_cell(w=200, h=30, text=wsheetName, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     ################# page 2 #################
     pdf.add_page()
@@ -379,6 +405,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_text_color(0, 0, 0)
     pdf.cell(773)
     pdf.cell(w=22, h=20, text=v_sum, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    # pdf.cell(w=22, h=20, text="108.24", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     
     pdf.ln()
     
@@ -389,30 +416,36 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
 
     pdf.set_font('Times', '', 45)
     pdf.set_text_color(grade_color[0], grade_color[1], grade_color[2])
+    # pdf.set_text_color(0, 255, 0)
     pdf.cell(360)
     pdf.cell(w=90, h=50, text=letter_grade, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    # pdf.cell(w=90, h=50, text="A+", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_font('Times', '', 13)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(lmargin+10)
     pdf.cell(w=280, h=10, text=f"{pedigree_dict['birth']} {pedigree_dict['sex']}", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    # pdf.cell(w=280, h=10, text="2018 Mare", new_x=XPos.LMARGIN, new_y=YPos.TOP)
 
     pdf.set_font('Times', '', 9)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(360)
     pdf.cell(w=90, h=25, text=f"VARIANT = {v_sum}", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    # pdf.cell(w=90, h=25, text=f"VARIANT = 108.24", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_line_width(0.5)
     pdf.ln(92)
     
     # MMM
     anc_mmm = pedigree_dict["pedigree"][0]
+    # anc_mmm = "1"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=254, w=100, h=22, style="D")
     # MMMM
     anc_mmmm = pedigree_dict["pedigree"][1]
+    # anc_mmmm = "2"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mmmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -420,6 +453,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(16)
     # MM
     anc_mm = pedigree_dict["pedigree"][2]
+    # anc_mm = "3"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_mm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -427,12 +461,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # MMF
     anc_mmf = pedigree_dict["pedigree"][3]
+    # anc_mmf = "4"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mmf, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=285, w=100, h=22, style="D")
     # MMFM
     anc_mmfm = pedigree_dict["pedigree"][4]
+    # anc_mmfm = "5"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mmfm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -440,6 +476,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # M
     anc_m = pedigree_dict["pedigree"][5]
+    # anc_m = "6"
     pdf.cell(20)
     pdf.cell(w=100, h=0, text=anc_m, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(155, 203, 244)
@@ -447,12 +484,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # MFM
     anc_mfm = pedigree_dict["pedigree"][6]
+    # anc_mfm = "7"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mfm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=315, w=100, h=22, style="D")
     # MFMM
     anc_mfmm = pedigree_dict["pedigree"][7]
+    # anc_mfmm = "8"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mfmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -460,6 +499,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # MF
     anc_mf = pedigree_dict["pedigree"][8]
+    # anc_mf = "9"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_mf, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -467,12 +507,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # MFF
     anc_mff = pedigree_dict["pedigree"][9]
+    # anc_mff = "10"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_mff, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=345, w=100, h=22, style="D")
     # MFFM
     anc_mffm = pedigree_dict["pedigree"][10]
+    # anc_mffm = "11"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_mffm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.set_draw_color(0, 0, 0)
@@ -480,12 +522,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(30)
     # FMM
     anc_fmm = pedigree_dict["pedigree"][11]
+    # anc_fmm = "12"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_fmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=375, w=100, h=22, style="D")
     # FMMM
     anc_fmmm = pedigree_dict["pedigree"][12]
+    # anc_fmmm = "13"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_fmmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -493,6 +537,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # FM
     anc_fm = pedigree_dict["pedigree"][13]
+    # anc_fm = "14"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_fm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(56, 224, 225)
@@ -500,12 +545,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # FMF
     anc_fmf = pedigree_dict["pedigree"][14]
+    # anc_fmf = "15"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_fmf, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=405, w=100, h=22, style="D")
     # FMFM
     anc_fmfm = pedigree_dict["pedigree"][15]
+    # anc_fmfm = "16"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_fmfm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -513,6 +560,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # F
     anc_f = pedigree_dict["pedigree"][16]
+    # anc_f = "17"
     pdf.cell(20)
     pdf.cell(w=100, h=0, text=anc_f, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -520,12 +568,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # FFM
     anc_ffm = pedigree_dict["pedigree"][17]
+    # anc_ffm = "18"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_ffm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(254, 32, 253)
     pdf.rect(x=270, y=435, w=100, h=22, style="D")
     # FFMM
     anc_ffmm = pedigree_dict["pedigree"][18]
+    # anc_ffmm = "19"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_ffmm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -533,6 +583,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # FF
     anc_ff = pedigree_dict["pedigree"][19]
+    # anc_ff = "20"
     pdf.cell(130)
     pdf.cell(w=100, h=0, text=anc_ff, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
@@ -540,12 +591,14 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.ln(15)
     # FFF
     anc_fff = pedigree_dict["pedigree"][20]
+    # anc_fff = "21"
     pdf.cell(240)
     pdf.cell(w=100, h=0, text=anc_fff, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(0, 0, 0)
     pdf.rect(x=270, y=465, w=100, h=22, style="D")
     # FFFM
     anc_fffm = pedigree_dict["pedigree"][21]
+    # anc_fffm = "22"
     pdf.cell(350)
     pdf.cell(w=100, h=0, text=anc_fffm, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     pdf.set_draw_color(250, 47, 190)
@@ -558,7 +611,8 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        ("The Money Depot", "3.32", "28", "7"),
+        (sire_name, v_sire, oned_sire, unique_sire),
+        # ("The Money Depot", "3.32", "28", "7"),
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -572,7 +626,8 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("Dam's Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        ("The Money Depot", "3.32", "28", "7"),
+        (damssire_name, v_damssire, oned_damssire, unique_damssire),
+        # ("Dash Ta Fame", "98.16", "1144", "251"),
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -586,7 +641,8 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("2nd Dam's Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        ("The Money Depot", "3.32", "28", "7"),
+        (damssire2_name, v_damssire2, oned_damssire2, unique_damssire2),
+        # ("Murrtheblurr", "3.05", "27", "7"),
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -600,7 +656,8 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_fill_color(255, 255, 255) # Back to white background
     TABLE_DATA = (
         ("3rd Dam's Sire", "Index", "Top Progeny", "Unique Top Progeny"),
-        ("The Money Depot", "3.32", "28", "7"),
+        (damssire3_name, v_damssire3, oned_damssire3, unique_damssire3),
+        # ("Dr Kirk", "3.94", "42", "9"),
     )
 
     with pdf.table(text_align=Align.C, col_widths=100, line_height=5) as table:
@@ -627,6 +684,219 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None):
     pdf.set_text_color(0, 0, 0)
     pdf.cell(lmargin+65)
     pdf.cell(w=0, h=30, text="Tier 1 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(360)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text=str(len(tier1_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(520)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(680)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="140", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(840)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.ln()
+    pdf.set_font_size(10)
+    pdf.cell(360)
+    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(520)
+    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(680)
+    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(840)
+    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.set_line_width(0.5)
+    pdf.set_xy(5, 215)
+    pdf.set_left_margin(70)
+    pdf.set_draw_color(0)
+    pdf.set_fill_color(255, 255, 255) # Back to white background
+    TABLE_DATA = (
+        ("Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"),
+        # (sire_name, v_sire, oned_sire, unique_sire),
+        ("A Streak Of Fling", "44%", "37.78", "A+", "0.00%"),
+        ("Epic Leader", "50%", "24.89", "A+", "0.00%"),
+        ("BHR Frenchies Socks", "36%", "16.00", "A+", "0.00%"),
+        ("Judge Cash", "47%", "10.28", "A+", "0.00%"),
+        ("Guys Canyon Moon", "74%", "9.58", "A", "0.00%"),
+        ("Eddie Stinson", "44%", "40.43", "A+", "6.25%"),
+        ("JL Dash Ta Heaven", "49%", "36.01", "A+", "6.25%"),
+        ("French Streaktovegas", "50%", "18.91", "A+", "0.00%"),
+        ("Blazin Jetolena", "49%", "27.96", "A+", "1.56%"),
+        ("Heavenly Firewater", "49%", "6.84", "A", "3.13%")
+    )
+
+    with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
+        for data_row in TABLE_DATA:
+            row = table.row()
+            for datum in data_row:
+                row.cell(datum, padding=(5, 0, 5, 0))
+                
+    pdf.set_xy(5, 215)
+    pdf.set_left_margin(1070)
+    TABLE_DATA = (
+        ("Top 10 Offspring", "Sire", "Top Placings", "Earnings"),
+        # (sire_name, v_sire, oned_sire, unique_sire),
+        ("This Guy Will Moonya", "Guys Canyon Moon", "33", ""),
+        ("Streak Gypsy Streak", "A Streak Of Fling", "30", ""),
+        ("Epic Future", "Epic Leader", "30", ""),
+        ("TNR Wannaseemycancan", "Eddie Stinson", "29", ""),
+        ("KN Lil Bit Of Heaven", "JL Dash Ta Heaven", "24", ""),
+        ("Raining From Heaven", "JL Dash Ta Heaven", "14", ""),
+        ("Salty Rita", "Blazin Jetolena", "13", ""),
+        ("Mamahadafling", "A Streak Of Fling", "10", ""),
+        ("Ima Epic Burr Bug", "Epic Leader", "9", ""),
+        ("Mistys Blazin Succes", "Blazin Jetolena", "7", "")
+    )
+
+    with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+        for data_row in TABLE_DATA:
+            row = table.row()
+            for datum in data_row:
+                row.cell(datum, padding=(5, 0, 5, 0))
+    
+    pdf.set_left_margin(0)
+    
+    ################# page 7 (Tier 2 Suggestions) #################
+    pdf.add_page()
+    pdf.set_line_width(2)
+    pdf.set_draw_color(0)
+    pdf.set_fill_color(r=255, g=255, b=255)
+    pdf.rect(x=50, y=100, w=240, h=60, style="D")
+    pdf.rect(x=360, y=100, w=90, h=60, style="D")
+    pdf.rect(x=520, y=100, w=90, h=60, style="D")
+    pdf.rect(x=680, y=100, w=90, h=60, style="D")
+    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+    pdf.ln(65)
+    pdf.set_font('Times', '', 22)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(lmargin+65)
+    pdf.cell(w=0, h=30, text="Tier 2 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(360)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text=str(len(tier2_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(520)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="20", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(680)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="76", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(840)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="17", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.ln()
+    pdf.set_font_size(10)
+    pdf.cell(360)
+    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(520)
+    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(680)
+    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(840)
+    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    
+    
+    ################# page 8 (Tier 3 Suggestions) #################
+    pdf.add_page()
+    pdf.set_line_width(2)
+    pdf.set_draw_color(0)
+    pdf.set_fill_color(r=255, g=255, b=255)
+    pdf.rect(x=50, y=100, w=240, h=60, style="D")
+    pdf.rect(x=360, y=100, w=90, h=60, style="D")
+    pdf.rect(x=520, y=100, w=90, h=60, style="D")
+    pdf.rect(x=680, y=100, w=90, h=60, style="D")
+    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+    pdf.ln(65)
+    pdf.set_font('Times', '', 22)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(lmargin+65)
+    pdf.cell(w=0, h=30, text="Tier 3 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(360)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text=str(len(tier3_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(520)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="28", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(680)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="288", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(840)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="63", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.ln()
+    pdf.set_font_size(10)
+    pdf.cell(360)
+    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(520)
+    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(680)
+    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(840)
+    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    
+    ################# page 9 (Tier 4 Suggestions) #################
+    pdf.add_page()
+    pdf.set_line_width(2)
+    pdf.set_draw_color(0)
+    pdf.set_fill_color(r=255, g=255, b=255)
+    pdf.rect(x=50, y=100, w=240, h=60, style="D")
+    pdf.rect(x=360, y=100, w=90, h=60, style="D")
+    pdf.rect(x=520, y=100, w=90, h=60, style="D")
+    pdf.rect(x=680, y=100, w=90, h=60, style="D")
+    pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+    pdf.ln(65)
+    pdf.set_font('Times', '', 22)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(lmargin+65)
+    pdf.cell(w=0, h=30, text="Tier 4 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(360)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text=str(len(tier4_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(520)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="29", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(680)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="456", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.cell(840)
+    pdf.set_font_size(50)
+    pdf.cell(w=90, h=25, text="90", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    
+    pdf.ln()
+    pdf.set_font_size(10)
+    pdf.cell(360)
+    pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(520)
+    pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(680)
+    pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+    pdf.cell(840)
+    pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     
 
     pdf.output(f"{wsheetName}.pdf")

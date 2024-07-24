@@ -1,4 +1,5 @@
 import os, math
+from collections import defaultdict
 from PyQt5.QtWidgets import QMessageBox
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -123,15 +124,15 @@ def getLetterGradeBy(g_sire, g_damssire, g_damssire2, g_damssire3):
     avg_grade_value = get2DigitsFloatValue(float(sum_grades / 4))
     final_grade_value = math.ceil(avg_grade_value)
     if final_grade_value >= 5:
-        return {"letter": "A+", "color_info": [95, 190, 70]}
+        return {"letter": "A+", "color_info": [36, 246, 0]}
     elif final_grade_value == 4:
-        return {"letter": "A", "color_info": [150, 200, 60]}
+        return {"letter": "A", "color_info": [152, 245, 0]}
     elif final_grade_value == 3:
-        return {"letter": "A-", "color_info": [245, 235, 10]}
+        return {"letter": "A-", "color_info": [245, 246, 0]}
     elif final_grade_value == 2:
-        return {"letter": "B", "color_info": [235, 155, 30]}
+        return {"letter": "B", "color_info": [237, 158, 0]}
     elif final_grade_value == 1:
-        return {"letter": "B-", "color_info": [235, 30, 35]}
+        return {"letter": "B-", "color_info": [255, 1, 1]}
     
 def get2DigitsStringValue(input):
     return '%.2f' % float(input)
@@ -143,6 +144,19 @@ def getPositionByPercent(fval, sval, percent):
     diff = sval - fval
     result = int((percent / 100) * diff)
     return fval + result
+
+def getGroupBySireAndCountHorse(init_data):
+    result_dict = defaultdict(lambda: defaultdict(int))
+    
+    for h, s in init_data:
+        result_dict[s][h] += 1
+        
+    result_array = []
+    for s, h_cnts in result_dict.items():
+        for h, cnt in h_cnts.items():
+            result_array.append([h, s, cnt])
+            
+    return result_array
 
 def sortByRate(arr, genType):
     sorted_arr = sorted(arr, key=lambda x: custom_key(x, 1), reverse=True)
@@ -213,6 +227,20 @@ def sortByIndex(arr, ind):
             cutted_arr.append(v)
         else: break
     return cutted_arr
+
+def sortByOtherTiers(arr, genType):
+    sorted_arr = sorted(arr, key=lambda x: len(x.replace(" ","")), reverse=True)
+    sorted_arr = sorted(sorted_arr, key=lambda x: custom_key(x, 7), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[7] == last_element[7]:
+                cutted_arr.append(v)
+            else: break
+        return cutted_arr
+    else:
+        return sorted_arr
 
 def custom_key(item, ind):
     if item[ind] == "N/A":
