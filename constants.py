@@ -1,10 +1,6 @@
 import os, math
 from collections import defaultdict
 from PyQt5.QtWidgets import QMessageBox
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -54,22 +50,6 @@ def load_spreadsheet_data(wsheetId, msheetId):
     except:
         return {"status": MSG_ERROR, "msg": "The Google Sheet Service is not able to use for now. Try again later."}
     
-def getChromeDriver():
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--log-level=3")
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
-
-    driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source":
-            "const newProto = navigator.__proto__;"
-            "delete newProto.webdriver;"
-            "navigator.__proto__ = newProto;"
-    })
-    return driver
-    
 def getSheetColumnLabels(start_index, n):
     column_labels = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
     sheet_column_labels = []
@@ -97,7 +77,7 @@ def getProjectPath():
 
 def getTextValue(list, index):
     try:
-        return list[index].find_element(By.CSS_SELECTOR, "div.block-name").get_attribute("title")
+        return list[index].select_one("div.block-name").get("title")
     except:
         return ""
 
@@ -106,14 +86,14 @@ def getPedigreeDataFromTable(table):
     ## Extract the values will be input in spreadsheet ##
     ids = ["MMM", "MMMM", "MM", "MMF", "MMFM", "M", "MFM", "MFMM", "MF", "MFF", "MFFM", "FMM", "FMMM", "FM", "FMF", "FMFM", "F", "FFM", "FFMM", "FF", "FFF", "FFFM"]
     for id in ids:
-        td_elem = table.find_element(By.CSS_SELECTOR, f"td#{id}")
-        next_td_elem = td_elem.find_element(By.XPATH, "./following-sibling::td")
-        if next_td_elem.get_attribute("class") == "pedigree-cell-highlight":
-            label = td_elem.find_element(By.CSS_SELECTOR, "div.block-name").get_attribute("title").title()
+        td_elem = table.select_one(f"td#{id}")
+        next_td_elem = table.select_one(f"td#{id} + td")
+        if next_td_elem.get("class") == "pedigree-cell-highlight":
+            label = td_elem.select_one("div.block-name").get("title").title()
             label += "*"
             result.append(label)
         else:
-            result.append(td_elem.find_element(By.CSS_SELECTOR, "div.block-name").get_attribute("title").title())
+            result.append(td_elem.select_one("div.block-name").get("title").title())
         
 
     return result

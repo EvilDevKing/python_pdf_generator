@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         self.btn_gen.setEnabled(False)
 
         pool = QThreadPool.globalInstance()
-        if self.version == "v1.0":
+        if self.version == "v2.0":
             gen = Gen(self.msheetId, self.wsheetId, self.sheetName, gen_type)
             gen.signal.completed.connect(self.updateLoadingGen)
             pool.start(gen)

@@ -1,12 +1,9 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select, WebDriverWait
-from fpdf import FPDF, XPos, YPos, Align, svg
+from fpdf import FPDF, XPos, YPos, Align
+import math
+import requests
+from requests.adapters import HTTPAdapter
+from bs4 import BeautifulSoup
 from constants import *
-import time, math, re
-
-cur_dir = getProjectPath()
 
 class CustomPDF(FPDF):
     def __init__(self, orientation, unit, format):
@@ -32,78 +29,59 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     ################# Preparing PDF Data #####################
     #################                    #####################
     ##########################################################
-    url = "https://beta.allbreedpedigree.com/login"
-    browser = getChromeDriver()
-    browser.get(url)
-    WebDriverWait(browser, 10).until(lambda browser: browser.execute_script('return document.readyState') == 'complete')
-    WebDriverWait(browser, 10).until(ec.element_to_be_clickable((By.XPATH, "//button[@class='btn-close']"))).click()
-    time.sleep(1)
-    email_elem = browser.find_element(By.CSS_SELECTOR, "input#id-field-email")
-    email_elem.click()
-    email_elem.send_keys("brittany.holy@gmail.com")
-
-    pass_elem = browser.find_element(By.CSS_SELECTOR, "input#id-field-password")
-    pass_elem.click()
-    pass_elem.send_keys("7f2uwvm5e4sD5PH")
-
-    form_elem = browser.find_element(By.CSS_SELECTOR, "form#login-form")
-    form_elem.submit()
+    s = requests.Session()
+    adapter = HTTPAdapter(max_retries=3)
+    s.mount('http://', adapter)
+    s.mount('https://', adapter)
     
-    WebDriverWait(browser, 10).until(ec.element_to_be_clickable((By.XPATH, "//div[@id='header-search-input-helper']"))).click()
-    input_elem = WebDriverWait(browser, 10).until(ec.element_to_be_clickable((By.XPATH, "//input[@id='header-search-input']")))
-    input_elem.send_keys(Keys.CONTROL + "a")
-    input_elem.send_keys(Keys.DELETE)
-    input_elem.send_keys(wsheetName, Keys.ENTER)
-
+    resp = s.get("https://beta.allbreedpedigree.com/login")
+    soup = BeautifulSoup(resp.content, 'html.parser')
+    meta_tags = soup.find_all('meta')
+    token = ""
+    for tag in meta_tags:
+        if 'name' in tag.attrs:
+            name = tag.attrs['name']
+            if name == "csrf-token":
+                token = tag.attrs['content']
+                break
+    s.post("https://beta.allbreedpedigree.com/login", data={ "_token": token, "email": "brittany.holy@gmail.com", "password": "7f2uwvm5e4sD5PH" })
+    resp = s.get(f"https://beta.allbreedpedigree.com/search?query_type=check&search_bar=horse&g=5&inbred=Standard&breed=&query={wsheetName}")
+    soup = BeautifulSoup(resp.content, 'html.parser')
     pedigree_dict = dict()
     try:
-        table = browser.find_element(By.CSS_SELECTOR, "table.pedigree-table tbody")
-        pedigree_dict["sex"] = browser.find_element(By.CSS_SELECTOR, "span#pedigree-animal-info span[title='Sex']").text
-        pedigree_dict["birth"] = browser.find_element(By.CSS_SELECTOR, "span#pedigree-animal-info span[title='Date of Birth']").text
+        pedigree_dict["sex"] = soup.select_one("span#pedigree-animal-info span[title='Sex']").text
+        pedigree_dict["birth"] = soup.select_one("span#pedigree-animal-info span[title='Date of Birth']").text
+        table = soup.select_one("table.pedigree-table")
         pedigree_dict["pedigree"] = getPedigreeDataFromTable(table)
     except:
         try:
-            table = browser.find_element(By.CSS_SELECTOR, "div.layout-table-wrapper table tbody")
-            tds = table.find_elements(By.CSS_SELECTOR, "td:nth-child(1)")
+            table = soup.select_one("div.layout-table-wrapper table")
+            tds = table.select("td:nth-child(1)")
             txt_vals = []
             links = []
             for td in tds:
                 txt_vals.append(td.text.upper())
-                links.append(td.find_element(By.CSS_SELECTOR, "a").get_attribute("href"))
+                links.append(td.select_one("a").get("href"))
             indexes = [i for i, x in enumerate(txt_vals) if x.lower() == wsheetName.lower()]
             if len(indexes) == 1:
-                browser.get(links[0])
-                WebDriverWait(browser, 10).until(lambda browser: browser.execute_script('return document.readyState') == 'complete')
-                table = browser.find_element(By.CSS_SELECTOR, "table.pedigree-table tbody")
-                pedigree_dict["sex"] = browser.find_element(By.CSS_SELECTOR, "span#pedigree-animal-info span[title='Sex']").text
-                pedigree_dict["birth"] = browser.find_element(By.CSS_SELECTOR, "span#pedigree-animal-info span[title='Date of Birth']").text
+                resp = s.get(links[0])
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                pedigree_dict["sex"] = soup.select_one("span#pedigree-animal-info span[title='Sex']").text
+                pedigree_dict["birth"] = soup.select_one("span#pedigree-animal-info span[title='Date of Birth']").text
+                table = soup.select_one("table.pedigree-table")
                 pedigree_dict["pedigree"] = getPedigreeDataFromTable(table)
             else:
                 try:
-                    select = Select(browser.find_element(By.XPATH, "//select[@id='filter-match']"))
-                    select.select_by_value("exact")
-                    WebDriverWait(browser, 10).until(lambda browser: browser.execute_script('return document.readyState') == 'complete')
-                    table = browser.find_element(By.CSS_SELECTOR, "table.pedigree-table tbody")
-                    pedigree_dict["sex"] = browser.find_element(By.CSS_SELECTOR, "span#pedigree-animal-info span[title='Sex']").text
-                    pedigree_dict["birth"] = browser.find_element(By.CSS_SELECTOR, "span#pedigree-animal-info span[title='Date of Birth']").text
+                    resp = s.get(f"https://beta.allbreedpedigree.com/search?match=exact&breed=&sex=&query={wsheetName}")
+                    soup = BeautifulSoup(resp.content, 'html.parser')
+                    pedigree_dict["sex"] = soup.select_one("span#pedigree-animal-info span[title='Sex']").text
+                    pedigree_dict["birth"] = soup.select_one("span#pedigree-animal-info span[title='Date of Birth']").text
+                    table = soup.select_one("table.pedigree-table")
                     pedigree_dict["pedigree"] = getPedigreeDataFromTable(table)
                 except:
-                    browser.quit()
                     return {"status": MSG_ERROR, "msg": "Not found your horse pedigree data from allbreedpedigree.com."}
         except:
-            browser.quit()
             return {"status": MSG_ERROR, "msg": "Not found your horse pedigree data from allbreedpedigree.com."}
-    
-    linebred_link = browser.find_element(By.CSS_SELECTOR, "div#report-menu li:nth-child(4) a").get_attribute("href")
-    browser.get(linebred_link)
-    gen_select = Select(browser.find_element(By.CSS_SELECTOR, "select[name='gens']"))
-    gen_select.select_by_visible_text("5")
-    time.sleep(1)
-    try:
-        coi_val = browser.find_element(By.CSS_SELECTOR, "blockquote ul li:nth-child(1) span.text-success strong").text
-        coi_val = get2DigitsStringValue(float(coi_val.replace("%",""))) + "%"
-    except:
-        coi_val = "0.00%"
 
     sire_name = pedigree_dict["pedigree"][5]
     damssire_name = pedigree_dict["pedigree"][13]
@@ -112,7 +90,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
 
     worksheet = getGoogleSheetService().spreadsheets()
     base_data = worksheet.values().get(spreadsheetId=wsheetId, range=f"{wsheetName}!B4:C").execute().get('values')
-    base_data2 = worksheet.values().get(spreadsheetId=msheetId, range="1d crosses!B2:C").execute().get('values')
+    oned_data = worksheet.values().get(spreadsheetId=msheetId, range="1d crosses!B2:W").execute().get('values')
     tier1_basedata = []
     tier2_basedata = []
     tier3_basedata = []
@@ -239,13 +217,11 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             if bd[1].lower() == sug[1].lower():
                 tier4_basedata.append(bd)
                 
-    for bd in base_data2:
+    for bd in oned_data:
         if len(bd) < 2: continue
         for sug in tier2_sugs:
             if bd[1].lower() == sug[1].lower():
-                tier2_basedata.append(bd)
-    
-    browser.quit()
+                tier2_basedata.append([bd[0], bd[1]])
     
     ############################################################
     #################                        ###################
