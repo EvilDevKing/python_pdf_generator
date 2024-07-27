@@ -170,6 +170,9 @@ def sortByCoi(arr, genType):
     else:
         return sorted_arr
     
+def sortByCoi(arr):
+    return sorted(arr, key=lambda x: float(x[5][:-1]), reverse=True)
+    
 def sortByCoiForUnrated(arr, genType):
     sorted_arr = sorted(arr, key=lambda x: float(x[4][:-1]), reverse=True)
     if genType == 0:
@@ -200,18 +203,8 @@ def sortByVariant(arr, genType):
     else:
         return sorted_arr
     
-def sortByVariant2(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: custom_key(x, 3), reverse=True)
-    if genType == 0:
-        cutted_arr = sorted_arr[:10]
-        last_element = cutted_arr[-1]
-        for v in sorted_arr[10:]:
-            if v[3] == last_element[3]:
-                cutted_arr.append(v)
-            else: break
-        return cutted_arr
-    else:
-        return sorted_arr
+def sortByVariant2(arr):
+    return sorted(arr, key=lambda x: custom_key(x, 3), reverse=True)
     
 def sortByIndex(arr, ind):
     sorted_arr = sorted(arr, key=lambda x: float(x[ind]), reverse=True)
@@ -222,20 +215,29 @@ def sortByIndex(arr, ind):
             cutted_arr.append(v)
         else: break
     return cutted_arr
-
-def sortByOtherTiers(arr, genType):
-    sorted_arr = sorted(arr, key=lambda x: len(x[0].replace(" ","")), reverse=True)
-    sorted_arr = sorted(sorted_arr, key=lambda x: custom_key(x, 3), reverse=True)
+    
+def rearrangeByOtherTiers(arr, genType):
+    obj = {"3": [], "2": [], "1": [], "0": []}
+    for row in arr:
+        if row[0] == "":
+            obj["0"].append(row)
+        elif len(row[0].split(",")) == 3:
+            obj["3"].append(row)
+        elif len(row[0].split(",")) == 2:
+            obj["2"].append(row)
+        elif len(row[0].split(",")) == 1:
+            obj["1"].append(row)
+    result_arr = sortByVariant2(obj["3"]) + sortByVariant2(obj["2"]) + sortByVariant2(obj["1"]) + sortByVariant2(obj["0"])
     if genType == 0:
-        cutted_arr = sorted_arr[:10]
+        cutted_arr = result_arr[:10]
         last_element = cutted_arr[-1]
-        for v in sorted_arr[10:]:
-            if v[3] == last_element[3]:
+        for v in result_arr[10:]:
+            if v[2] == last_element[2]:
                 cutted_arr.append(v)
             else: break
         return cutted_arr
     else:
-        return sorted_arr
+        return result_arr
 
 def custom_key(item, ind):
     if item[ind] == "N/A":

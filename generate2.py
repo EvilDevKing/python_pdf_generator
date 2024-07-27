@@ -189,6 +189,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
 
     tier1_sugs = []
     tier2_sugs = []
+    tier2_unrated_sugs = []
     tier3_sugs = []
     tier4_sugs = []
     if "tier 1" in tier_suggestions.keys():
@@ -197,37 +198,92 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
         temp_tier2_sugs = tier_suggestions["tier 2"]
         for v in temp_tier2_sugs:
             if v[2].strip() == "%" and v[3].strip() == "" and v[4].strip() == "":
-                tier2_sugs.append([v[0], v[1], "N/A", "N/A", "N/A", v[5]])
+                tier2_unrated_sugs.append([v[0], v[1], "N/A", "N/A", "N/A", v[5]])
             else:
                 tier2_sugs.append(v)
     if "tier 3" in tier_suggestions.keys():
         tier3_sugs = tier_suggestions["tier 3"]
     if "tier 4" in tier_suggestions.keys():
         tier4_sugs = tier_suggestions["tier 4"]
-        
+    
+    # Table data #
+    sorted_tier1_sugs = rearrangeByOtherTiers(tier1_sugs, genType)
+    tier1_left_data = [x[1:] for x in sorted_tier1_sugs]
+    
+    sorted_tier2_sugs = rearrangeByOtherTiers(tier2_sugs, genType)
+    tier2_left_data = [x[1:] for x in sorted_tier2_sugs]
+    sorted_tier2_unrated_sugs = sortByCoi(tier2_unrated_sugs)
+    tier2_left_unrated_data = [x[1:] for x in sorted_tier2_unrated_sugs]
+    
+    sorted_tier3_sugs = rearrangeByOtherTiers(tier3_sugs, genType)
+    tier3_left_data = [x[1:] for x in sorted_tier3_sugs]
+    
+    sorted_tier4_sugs = rearrangeByOtherTiers(tier4_sugs, genType)
+    tier4_left_data = [x[1:] for x in sorted_tier4_sugs]
+    
     for bd in base_data:
         if len(bd) == 0: break
-        for sug in tier1_sugs:
-            if bd[1].lower() == sug[1].lower():
+        for sug in tier1_left_data:
+            if bd[1].lower() == sug[0].lower():
                 tier1_basedata.append(bd)
-        for sug in tier3_sugs:
-            if bd[1].lower() == sug[1].lower():
+        for sug in tier3_left_data:
+            if bd[1].lower() == sug[0].lower():
                 tier3_basedata.append(bd)
-        for sug in tier3_sugs:
-            if bd[1].lower() == sug[1].lower():
+        for sug in tier4_left_data:
+            if bd[1].lower() == sug[0].lower():
                 tier4_basedata.append(bd)
                 
     for bd in oned_data:
         if len(bd) < 2: continue
-        for sug in tier2_sugs:
-            if bd[1].lower() == sug[1].lower():
+        for sug in tier2_left_data + tier2_left_unrated_data:
+            if bd[1].lower() == sug[0].lower():
                 tier2_basedata.append([bd[0], bd[1]])
+                
+    # Calculate Events #
+    tier1_metadata = {"events": [], "top_placings": [], "progeny": []}
+    tier2_metadata = {"events": [], "top_placings": [], "progeny": []}
+    tier3_metadata = {"events": [], "top_placings": [], "progeny": []}
+    tier4_metadata = {"events": [], "top_placings": [], "progeny": []}
+    for data in oned_data:
+        if len(tier1_sugs) != 0:
+            for sug in tier1_sugs:
+                if sug[1].lower() == data[1].lower():
+                    if len(data) > 21 and data[21].lower() not in tier1_metadata["events"]:
+                        tier1_metadata["events"].append(data[21].lower())
+                    tier1_metadata["top_placings"].append(data[0].lower())
+                    if data[0].lower() not in tier1_metadata["progeny"]:
+                        tier1_metadata["progeny"].append(data[0].lower())
+                        
+        if len(tier2_sugs) != 0:
+            for sug in tier2_sugs:
+                if sug[1].lower() == data[1].lower():
+                    if len(data) > 21 and data[21].lower() not in tier2_metadata["events"]:
+                        tier2_metadata["events"].append(data[21].lower())
+                    tier2_metadata["top_placings"].append(data[0].lower())
+                    if data[0].lower() not in tier2_metadata["progeny"]:
+                        tier2_metadata["progeny"].append(data[0].lower())
+        if len(tier3_sugs) != 0:
+            for sug in tier3_sugs:
+                if sug[1].lower() == data[1].lower():
+                    if len(data) > 21 and data[21].lower() not in tier3_metadata["events"]:
+                        tier3_metadata["events"].append(data[21].lower())
+                    tier3_metadata["top_placings"].append(data[0].lower())
+                    if data[0].lower() not in tier3_metadata["progeny"]:
+                        tier3_metadata["progeny"].append(data[0].lower())
+        if len(tier4_sugs) != 0:
+            for sug in tier4_sugs:
+                if sug[1].lower() == data[1].lower():
+                    if len(data) > 21 and data[21].lower() not in tier4_metadata["events"]:
+                        tier4_metadata["events"].append(data[21].lower())
+                    tier4_metadata["top_placings"].append(data[0].lower())
+                    if data[0].lower() not in tier4_metadata["progeny"]:
+                        tier4_metadata["progeny"].append(data[0].lower())
     
-    ############################################################
-    #################                        ###################
-    ################# PDF Generation Process ###################
-    #################                        ###################
-    ############################################################
+    ##############################################################
+    ###################                        ###################
+    ################### PDF Generation Process ###################
+    ###################                        ###################
+    ##############################################################
     lmargin = 20
     pdf = CustomPDF(orientation='L', unit='pt', format=(600, 1000))
 
@@ -675,9 +731,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
         pdf.cell(w=0, h=0, text="NO TIER 1 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
     else:
-        sorted_tier1_sugs = sortByOtherTiers(tier1_sugs, genType)
-        sorted_tier1_sugs = [x[1:] for x in sorted_tier1_sugs]
-        for i in range(math.ceil(len(sorted_tier1_sugs) / 10)):
+        for i in range(math.ceil(len(tier1_left_data) / 10)):
             pdf.add_page()
             pdf.set_line_width(2)
             pdf.set_draw_color(0)
@@ -700,15 +754,15 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(520)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier1_metadata["events"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="140", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier1_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="27", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier1_metadata["progeny"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.ln()
             pdf.set_font_size(10)
@@ -727,12 +781,10 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.set_draw_color(0)
             pdf.set_fill_color(255, 255, 255) # Back to white background
             
-            
-            
             TABLE_HEADER_DATA = [
                 ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
             ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier1_sugs[i*10:i*10+10]
+            TABLE_DATA = TABLE_HEADER_DATA + tier1_left_data[i*10:i*10+10]
 
             with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
                 for data_row in TABLE_DATA:
@@ -804,9 +856,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
         pdf.cell(lmargin)
         pdf.cell(w=0, h=0, text="NO TIER 2 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     else:
-        sorted_tier2_sugs = sortByVariant2(tier2_sugs, genType)
-        sorted_tier2_sugs = [x[1:] for x in sorted_tier2_sugs]
-        for i in range(math.ceil(len(sorted_tier2_sugs) / 10)):
+        for i in range(math.ceil(len(tier2_left_data) / 10)):
             pdf.add_page()
             pdf.set_line_width(2)
             pdf.set_draw_color(0)
@@ -829,15 +879,15 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(520)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="20", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier2_metadata["events"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="76", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier2_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="17", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier2_metadata["progeny"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.ln()
             pdf.set_font_size(10)
@@ -859,7 +909,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             TABLE_HEADER_DATA = [
                 ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
             ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier2_sugs[i*10:i*10+10]
+            TABLE_DATA = TABLE_HEADER_DATA + tier2_left_data[i*10:i*10+10] + tier2_left_unrated_data
 
             with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
                 for data_row in TABLE_DATA:
@@ -932,9 +982,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
         pdf.cell(lmargin)
         pdf.cell(w=0, h=0, text="NO TIER 3 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     else:
-        sorted_tier3_sugs = sortByVariant2(tier3_sugs, genType)
-        sorted_tier3_sugs = [x[1:] for x in sorted_tier3_sugs]
-        for i in range(math.ceil(len(sorted_tier3_sugs) / 10)):
+        for i in range(math.ceil(len(tier3_left_data) / 10)):
             pdf.add_page()
             pdf.set_line_width(2)
             pdf.set_draw_color(0)
@@ -957,15 +1005,15 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(520)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="28", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier3_metadata["events"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="288", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier3_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="63", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier3_metadata["progeny"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.ln()
             pdf.set_font_size(10)
@@ -987,7 +1035,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             TABLE_HEADER_DATA = [
                 ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
             ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier3_sugs[i*10:i*10+10]
+            TABLE_DATA = TABLE_HEADER_DATA + tier3_left_data[i*10:i*10+10]
 
             with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
                 for data_row in TABLE_DATA:
@@ -1059,9 +1107,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
         pdf.cell(lmargin)
         pdf.cell(w=0, h=0, text="NO TIER 4 STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     else:
-        sorted_tier4_sugs = sortByVariant2(tier4_sugs, genType)
-        sorted_tier4_sugs = [x[1:] for x in sorted_tier4_sugs]
-        for i in range(math.ceil(len(sorted_tier4_sugs) / 10)):
+        for i in range(math.ceil(len(tier4_left_data) / 10)):
             pdf.add_page()
             pdf.set_line_width(2)
             pdf.set_draw_color(0)
@@ -1084,15 +1130,15 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(520)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="29", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier4_metadata["events"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="456", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier4_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text="90", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=90, h=25, text=str(len(tier4_metadata["progeny"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.ln()
             pdf.set_font_size(10)
@@ -1114,7 +1160,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             TABLE_HEADER_DATA = [
                 ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
             ]
-            TABLE_DATA = TABLE_HEADER_DATA + sorted_tier4_sugs[i*10:i*10+10]
+            TABLE_DATA = TABLE_HEADER_DATA + tier4_left_data[i*10:i*10+10]
 
             with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
                 for data_row in TABLE_DATA:
@@ -1138,4 +1184,4 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.output(f"{wsheetName}.pdf")
     return {"status": MSG_SUCCESS, "msg": "Success"}
     
-# create_pdf(wsheetId="1h-tZdm0-UJnC09j8dYidTND1FCWRGDxkBMCmHzr1bYM", wsheetName="Mistys Money N Fame", msheetId="18wZ_UlyQKmhzygdb8nk8I6xAyIPvxJm3Ofh58d1NKZs", genType=1)
+create_pdf(wsheetId="1h-tZdm0-UJnC09j8dYidTND1FCWRGDxkBMCmHzr1bYM", wsheetName="Mistys Money N Fame", msheetId="1g5kX6F34q2HFn4aqfXb5tkjBM_qTSy4fHUakxz6qJj0", genType=0)
