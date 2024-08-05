@@ -94,31 +94,44 @@ def getPedigreeDataFromTable(table):
             result.append(label)
         else:
             result.append(td_elem.select_one("div.block-name").get("title").title())
-        
 
     return result
 
-def getLetterGradeBy(g_sire, g_damssire, g_damssire2, g_damssire3):
+def getGradeInfo(g_sire, g_damssire, g_damssire2, g_damssire3):
+    tempbar_obj = {"B-": 657, "B": 693, "A-": 730, "A": 760, "A+": 792, "A*": 832}
     letter_grade_constants = {"A+": 5, "A": 4, "A-": 3, "B": 2, "B-": 1}
     sum_grades = (letter_grade_constants[g_sire] if g_sire != None else 0) + (letter_grade_constants[g_damssire] if g_damssire != None else 0) + (letter_grade_constants[g_damssire2] if g_damssire2 != None else 0) + letter_grade_constants[g_damssire3]
-    avg_grade_value = get2DigitsFloatValue(float(sum_grades / 4))
+    avg_grade_value = float(get2DigitsStringValue(float(sum_grades / 4)))
     final_grade_value = math.ceil(avg_grade_value)
     if final_grade_value >= 5:
-        return {"letter": "A+", "color_info": [36, 246, 0]}
+        return {"letter": "A+", "color_info": [36, 246, 0], "tempbar_pos": getPositionByPercent(tempbar_obj["A+"], tempbar_obj["A*"], 50)}
     elif final_grade_value == 4:
-        return {"letter": "A", "color_info": [152, 245, 0]}
+        remaining_val = 4- avg_grade_value
+        if remaining_val == 0:
+            return {"letter": "A", "color_info": [152, 245, 0], "tempbar_pos": tempbar_obj["A"]}
+        else:
+            return {"letter": "A", "color_info": [152, 245, 0], "tempbar_pos": getPositionByPercent(tempbar_obj["A"], tempbar_obj["A+"], remaining_val*100)}
     elif final_grade_value == 3:
-        return {"letter": "A-", "color_info": [245, 246, 0]}
+        remaining_val = 3 - avg_grade_value
+        if remaining_val == 0:
+            return {"letter": "A-", "color_info": [245, 246, 0], "tempbar_pos": tempbar_obj["A-"]}
+        else:
+            return {"letter": "A-", "color_info": [245, 246, 0], "tempbar_pos": getPositionByPercent(tempbar_obj["A-"], tempbar_obj["A"], remaining_val*100)}
     elif final_grade_value == 2:
-        return {"letter": "B", "color_info": [237, 158, 0]}
+        remaining_val = 2 - avg_grade_value
+        if remaining_val == 0:
+            return {"letter": "B", "color_info": [237, 158, 0], "tempbar_pos": tempbar_obj["B"]}
+        else:
+            return {"letter": "B", "color_info": [237, 158, 0], "tempbar_pos": getPositionByPercent(tempbar_obj["B"], tempbar_obj["A-"], remaining_val*100)}
     elif final_grade_value == 1:
-        return {"letter": "B-", "color_info": [255, 1, 1]}
+        remaining_val = 1 - avg_grade_value
+        if remaining_val == 0:
+            return {"letter": "B-", "color_info": [255, 1, 1], "tempbar_pos": tempbar_obj["B-"]}
+        else:
+            return {"letter": "B-", "color_info": [255, 1, 1], "tempbar_pos": getPositionByPercent(tempbar_obj["B-"], tempbar_obj["B"], remaining_val*100)}
     
 def get2DigitsStringValue(input):
     return '%.2f' % float(input)
-
-def get2DigitsFloatValue(input):
-    return float('%.2f' % float(input))
 
 def getPositionByPercent(fval, sval, percent):
     diff = sval - fval
@@ -134,11 +147,7 @@ def groupBySireAndCountHorse(init_data, genType):
     for s, h_cnts in result_dict.items():
         for h, cnt in h_cnts.items():
             result_array.append([h, s, str(cnt), ""])
-    result_array = sortByIndex(result_array, 2)
-    if genType == 0:
-        return result_array[:10]
-    else:
-        return result_array
+    return sortByIndex2(result_array, 2, genType)
 
 def sortByRate(arr, genType):
     sorted_arr = sorted(arr, key=lambda x: custom_key(x, 1), reverse=True)
@@ -170,7 +179,7 @@ def sortByCoi(arr, genType):
     else:
         return sorted_arr
     
-def sortByCoi(arr):
+def sortByCoi2(arr):
     return sorted(arr, key=lambda x: float(x[5][:-1]), reverse=True)
     
 def sortByCoiForUnrated(arr, genType):
@@ -215,6 +224,19 @@ def sortByIndex(arr, ind):
             cutted_arr.append(v)
         else: break
     return cutted_arr
+
+def sortByIndex2(arr, ind, genType):
+    sorted_arr = sorted(arr, key=lambda x: float(x[ind]), reverse=True)
+    if genType == 0:
+        cutted_arr = sorted_arr[:10]
+        last_element = cutted_arr[-1]
+        for v in sorted_arr[10:]:
+            if v[ind] == last_element[ind]:
+                cutted_arr.append(v)
+            else: break
+        return cutted_arr
+    else:
+        return sorted_arr
     
 def rearrangeByOtherTiers(arr, genType):
     obj = {"3": [], "2": [], "1": [], "0": []}

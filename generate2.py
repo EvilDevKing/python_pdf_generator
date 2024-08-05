@@ -116,11 +116,11 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
 
     if len(sire_pred) == 0:
         oned_sire = 0
-        v_sire = 0
+        v_sire = "0.00"
         g_sire = "B-"
     else:
         oned_sire = sire_pred[0][1]
-        v_sire = sire_pred[0][3]
+        v_sire = get2DigitsStringValue(sire_pred[0][3])
         g_sire = sire_pred[0][4]
         
     if len(sire_unique_pred) == 0:
@@ -130,11 +130,11 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
         
     if len(damssire_pred) == 0:
         oned_damssire = 0
-        v_damssire = 0
+        v_damssire = "0.00"
         g_damssire = "B-"
     else:
         oned_damssire = damssire_pred[0][1]
-        v_damssire = damssire_pred[0][3]
+        v_damssire = get2DigitsStringValue(damssire_pred[0][3])
         g_damssire = damssire_pred[0][4]
         
     if len(damssire_unique_pred) == 0:
@@ -144,11 +144,11 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
 
     if len(damssire2_pred) == 0:
         oned_damssire2 = 0
-        v_damssire2 = 0
+        v_damssire2 = "0.00"
         g_damssire2 = "B-"
     else:
         oned_damssire2 = damssire2_pred[0][1]
-        v_damssire2 = damssire2_pred[0][3]
+        v_damssire2 = get2DigitsStringValue(damssire2_pred[0][3])
         g_damssire2 = damssire2_pred[0][4]
         
     if len(damssire2_unique_pred) == 0:
@@ -158,11 +158,11 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
 
     if len(damssire3_pred) == 0:
         oned_damssire3 = 0
-        v_damssire3 = 0
+        v_damssire3 = "0.00"
         g_damssire3 = "B-"
     else:
         oned_damssire3 = damssire3_pred[0][1]
-        v_damssire3 = damssire3_pred[0][3]
+        v_damssire3 = get2DigitsStringValue(damssire3_pred[0][3])
         g_damssire3 = damssire3_pred[0][4]
         
     if len(damssire3_unique_pred) == 0:
@@ -170,7 +170,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     else:
         unique_damssire3 = damssire3_unique_pred[0][1]
 
-    grade_info = getLetterGradeBy(g_sire, g_damssire, g_damssire2, g_damssire3)
+    grade_info = getGradeInfo(g_sire, g_damssire, g_damssire2, g_damssire3)
     letter_grade = grade_info["letter"]
     grade_color = grade_info["color_info"]
     v_sum = get2DigitsStringValue(float(v_sire) + float(v_damssire) + float(v_damssire2) + float(v_damssire3))
@@ -212,7 +212,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     
     sorted_tier2_sugs = rearrangeByOtherTiers(tier2_sugs, genType)
     tier2_left_data = [x[1:] for x in sorted_tier2_sugs]
-    sorted_tier2_unrated_sugs = sortByCoi(tier2_unrated_sugs)
+    sorted_tier2_unrated_sugs = sortByCoi2(tier2_unrated_sugs)
     tier2_left_unrated_data = [x[1:] for x in sorted_tier2_unrated_sugs]
     
     sorted_tier3_sugs = rearrangeByOtherTiers(tier3_sugs, genType)
@@ -439,13 +439,13 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
     pdf.rect(x=50, y=100, w=240, h=70, style="D")
     pdf.rect(x=390, y=100, w=90, h=70, style="D")
     pdf.image('assets/images/tempbar.png', 650, 120, 200, 60)
-    pdf.image('assets/images/teardrop.png', 800, 75, 25)
+    pdf.image('assets/images/teardrop.png', grade_info["tempbar_pos"], 75, 25)
     
     pdf.ln()
     
     pdf.set_font('Times', 'B', 6)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(773)
+    pdf.cell(grade_info["tempbar_pos"] - 27)
     pdf.cell(w=22, h=20, text=v_sum, align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
     
     pdf.ln()
@@ -739,7 +739,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.rect(x=50, y=100, w=240, h=60, style="D")
             pdf.rect(x=360, y=100, w=90, h=60, style="D")
             pdf.rect(x=520, y=100, w=90, h=60, style="D")
-            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=100, h=60, style="D")
             pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
             pdf.ln(65)
@@ -758,7 +758,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text=str(len(tier1_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=100, h=25, text=str(len(tier1_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
@@ -770,7 +770,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(520)
             pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-            pdf.cell(680)
+            pdf.cell(685)
             pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(840)
             pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
@@ -782,7 +782,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.set_fill_color(255, 255, 255) # Back to white background
             
             TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ["Stallion", "1D Rate", "Variant", "EquiSource Score", "Inbreeding Coefficient of foal"]
             ]
             TABLE_DATA = TABLE_HEADER_DATA + tier1_left_data[i*10:i*10+10]
 
@@ -792,21 +792,23 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
                     for datum in data_row:
                         row.cell(datum, padding=(5, 0, 5, 0))
                         
-            pdf.set_xy(5, 215)
-            pdf.set_left_margin(1070)
-            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
-            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier1_basedata, genType)
+            tier1_right_table_data = groupBySireAndCountHorse(tier1_basedata, genType)[i*10:i*10+10]
+            if len(tier1_right_table_data) != 0:
+                pdf.set_xy(5, 215)
+                pdf.set_left_margin(1070)
+                TABLE_HEADER_DATA = [[f"Top {'10 ' if genType == 0 else ''}Offspring", "Sire", "Top Placings", "Earnings"]]
+                TABLE_DATA = TABLE_HEADER_DATA + tier1_right_table_data
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(5, 0, 5, 0))
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(5, 0, 5, 0))
                     
             pdf.set_left_margin(0)
     
     ################# page 7 (Tier 2 Suggestions) #################
-    if len(tier2_sugs) == 0:
+    if len(tier2_left_data) == 0:
         pdf.add_page()
         pdf.set_line_width(2)
         pdf.set_draw_color(0)
@@ -864,7 +866,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.rect(x=50, y=100, w=240, h=60, style="D")
             pdf.rect(x=360, y=100, w=90, h=60, style="D")
             pdf.rect(x=520, y=100, w=90, h=60, style="D")
-            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=100, h=60, style="D")
             pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
             pdf.ln(65)
@@ -883,7 +885,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text=str(len(tier2_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=100, h=25, text=str(len(tier2_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
@@ -895,7 +897,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(520)
             pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-            pdf.cell(680)
+            pdf.cell(685)
             pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(840)
             pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
@@ -907,9 +909,9 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.set_fill_color(255, 255, 255) # Back to white background
             
             TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ["Stallion", "1D Rate", "Variant", "EquiSource Score", "Inbreeding Coefficient of foal"]
             ]
-            TABLE_DATA = TABLE_HEADER_DATA + tier2_left_data[i*10:i*10+10] + tier2_left_unrated_data
+            TABLE_DATA = TABLE_HEADER_DATA + tier2_left_data[i*10:i*10+10]
 
             with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
                 for data_row in TABLE_DATA:
@@ -917,19 +919,134 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
                     for datum in data_row:
                         row.cell(datum, padding=(5, 0, 5, 0))
                         
-            pdf.set_xy(5, 215)
-            pdf.set_left_margin(1070)
-            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
-            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier2_basedata, genType)
+            tier2_right_table_data = groupBySireAndCountHorse(tier2_basedata, genType)[i*10:i*10+10]
+            if len(tier2_right_table_data) != 0:
+                pdf.set_xy(5, 215)
+                pdf.set_left_margin(1070)
+                TABLE_HEADER_DATA = [[f"Top {'10 ' if genType == 0 else ''}Offspring", "Sire", "Top Placings", "Earnings"]]
+                TABLE_DATA = TABLE_HEADER_DATA + tier2_right_table_data
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(5, 0, 5, 0))
+                    
+            pdf.set_left_margin(0)
+            
+    ################# page 7 (Tier 2 unrated Suggestions) #################
+    if len(tier2_left_unrated_data) == 0:
+        pdf.add_page()
+        pdf.set_line_width(2)
+        pdf.set_draw_color(0)
+        pdf.set_fill_color(r=255, g=255, b=255)
+        pdf.rect(x=50, y=100, w=240, h=60, style="D")
+        pdf.rect(x=360, y=100, w=90, h=60, style="D")
+        pdf.rect(x=520, y=100, w=90, h=60, style="D")
+        pdf.rect(x=680, y=100, w=90, h=60, style="D")
+        pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+        pdf.ln(65)
+        pdf.set_font('Times', '', 22)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(lmargin+65)
+        pdf.cell(w=0, h=30, text="Tier 2 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(360)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(520)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(680)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.cell(840)
+        pdf.set_font_size(50)
+        pdf.cell(w=90, h=25, text="0", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln()
+        pdf.set_font_size(10)
+        pdf.cell(360)
+        pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(520)
+        pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(680)
+        pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        pdf.cell(840)
+        pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+        
+        pdf.ln(100)
+
+        pdf.set_font('Times', '', 15)
+        pdf.cell(lmargin)
+        pdf.cell(w=0, h=0, text="NO TIER 2 UNRATED STALLION SUGGESTIONS FOUND.", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        for i in range(math.ceil(len(tier2_left_unrated_data) / 10)):
+            pdf.add_page()
+            pdf.set_line_width(2)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(r=255, g=255, b=255)
+            pdf.rect(x=50, y=100, w=240, h=60, style="D")
+            pdf.rect(x=360, y=100, w=90, h=60, style="D")
+            pdf.rect(x=520, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=100, h=60, style="D")
+            pdf.rect(x=840, y=100, w=90, h=60, style="D")
+
+            pdf.ln(65)
+            pdf.set_font('Times', '', 22)
+            pdf.set_text_color(0, 0, 0)
+            pdf.cell(lmargin+65)
+            pdf.cell(w=0, h=30, text="Tier 2 Suggestions", new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(360)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier2_sugs)), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(520)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier2_metadata["events"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(680)
+            pdf.set_font_size(50)
+            pdf.cell(w=100, h=25, text=str(len(tier2_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.cell(840)
+            pdf.set_font_size(50)
+            pdf.cell(w=90, h=25, text=str(len(tier2_metadata["progeny"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.ln()
+            pdf.set_font_size(10)
+            pdf.cell(360)
+            pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(520)
+            pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(685)
+            pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(840)
+            pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            
+            pdf.set_line_width(0.5)
+            pdf.set_xy(5, 215)
+            pdf.set_left_margin(70)
+            pdf.set_draw_color(0)
+            pdf.set_fill_color(255, 255, 255) # Back to white background
+            
+            TABLE_HEADER_DATA = [
+                ["Stallion", "1D Rate", "Variant", "EquiSource Score", "Inbreeding Coefficient of foal"]
+            ]
+            TABLE_DATA = TABLE_HEADER_DATA + tier2_left_unrated_data[i*10:i*10+10]
+
+            with pdf.table(text_align=Align.C, col_widths=90, line_height=10) as table:
                 for data_row in TABLE_DATA:
                     row = table.row()
                     for datum in data_row:
                         row.cell(datum, padding=(5, 0, 5, 0))
                     
             pdf.set_left_margin(0)
-    
     
     ################# page 8 (Tier 3 Suggestions) #################
     if len(tier3_sugs) == 0:
@@ -990,7 +1107,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.rect(x=50, y=100, w=240, h=60, style="D")
             pdf.rect(x=360, y=100, w=90, h=60, style="D")
             pdf.rect(x=520, y=100, w=90, h=60, style="D")
-            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=100, h=60, style="D")
             pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
             pdf.ln(65)
@@ -1009,7 +1126,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text=str(len(tier3_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=100, h=25, text=str(len(tier3_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
@@ -1021,7 +1138,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(520)
             pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-            pdf.cell(680)
+            pdf.cell(685)
             pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(840)
             pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
@@ -1033,7 +1150,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.set_fill_color(255, 255, 255) # Back to white background
             
             TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ["Stallion", "1D Rate", "Variant", "EquiSource Score", "Inbreeding Coefficient of foal"]
             ]
             TABLE_DATA = TABLE_HEADER_DATA + tier3_left_data[i*10:i*10+10]
 
@@ -1043,16 +1160,18 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
                     for datum in data_row:
                         row.cell(datum, padding=(5, 0, 5, 0))
                         
-            pdf.set_xy(5, 215)
-            pdf.set_left_margin(1070)
-            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
-            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier3_basedata, genType)
+            tier3_right_table_data = groupBySireAndCountHorse(tier3_basedata, genType)[i*10:i*10+10]
+            if len(tier3_right_table_data) != 0:
+                pdf.set_xy(5, 215)
+                pdf.set_left_margin(1070)
+                TABLE_HEADER_DATA = [[f"Top {'10 ' if genType == 0 else ''}Offspring", "Sire", "Top Placings", "Earnings"]]
+                TABLE_DATA = TABLE_HEADER_DATA + tier3_right_table_data
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(5, 0, 5, 0))
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(5, 0, 5, 0))
                     
             pdf.set_left_margin(0)
     
@@ -1115,7 +1234,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.rect(x=50, y=100, w=240, h=60, style="D")
             pdf.rect(x=360, y=100, w=90, h=60, style="D")
             pdf.rect(x=520, y=100, w=90, h=60, style="D")
-            pdf.rect(x=680, y=100, w=90, h=60, style="D")
+            pdf.rect(x=680, y=100, w=100, h=60, style="D")
             pdf.rect(x=840, y=100, w=90, h=60, style="D")
 
             pdf.ln(65)
@@ -1134,7 +1253,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             
             pdf.cell(680)
             pdf.set_font_size(50)
-            pdf.cell(w=90, h=25, text=str(len(tier4_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
+            pdf.cell(w=100, h=25, text=str(len(tier4_metadata["top_placings"])), align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             
             pdf.cell(840)
             pdf.set_font_size(50)
@@ -1146,7 +1265,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.cell(w=90, h=30, text="MATCHES FOUND", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(520)
             pdf.cell(w=90, h=30, text="EVENTS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
-            pdf.cell(680)
+            pdf.cell(685)
             pdf.cell(w=90, h=30, text="TOP PLACINGS", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
             pdf.cell(840)
             pdf.cell(w=90, h=30, text="PROGENY", align=Align.C, new_x=XPos.LMARGIN, new_y=YPos.TOP)
@@ -1158,7 +1277,7 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
             pdf.set_fill_color(255, 255, 255) # Back to white background
             
             TABLE_HEADER_DATA = [
-                ["Stallion", "1D Rate", "Variant", "Equi-Source Score", "Inbreeding Coefficient of foal"]
+                ["Stallion", "1D Rate", "Variant", "EquiSource Score", "Inbreeding Coefficient of foal"]
             ]
             TABLE_DATA = TABLE_HEADER_DATA + tier4_left_data[i*10:i*10+10]
 
@@ -1167,21 +1286,23 @@ def create_pdf(wsheetId=None, wsheetName=None, msheetId=None, genType=None):
                     row = table.row()
                     for datum in data_row:
                         row.cell(datum, padding=(5, 0, 5, 0))
-                        
-            pdf.set_xy(5, 215)
-            pdf.set_left_margin(1070)
-            TABLE_HEADER_DATA = [["Top 10 Offspring", "Sire", "Top Placings", "Earnings"]]
-            TABLE_DATA = TABLE_HEADER_DATA + groupBySireAndCountHorse(tier4_basedata, genType)
+            
+            tier4_right_table_data = groupBySireAndCountHorse(tier4_basedata, genType)[i*10:i*10+10]
+            if len(tier4_right_table_data) != 0:
+                pdf.set_xy(5, 215)
+                pdf.set_left_margin(1070)
+                TABLE_HEADER_DATA = [[f"Top {'10 ' if genType == 0 else ''}Offspring", "Sire", "Top Placings", "Earnings"]]
+                TABLE_DATA = TABLE_HEADER_DATA + tier4_right_table_data
 
-            with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
-                for data_row in TABLE_DATA:
-                    row = table.row()
-                    for datum in data_row:
-                        row.cell(datum, padding=(5, 0, 5, 0))
+                with pdf.table(text_align=Align.C, col_widths=100, line_height=10) as table:
+                    for data_row in TABLE_DATA:
+                        row = table.row()
+                        for datum in data_row:
+                            row.cell(datum, padding=(5, 0, 5, 0))
                     
             pdf.set_left_margin(0)
 
     pdf.output(f"{wsheetName}.pdf")
     return {"status": MSG_SUCCESS, "msg": "Success"}
     
-create_pdf(wsheetId="1h-tZdm0-UJnC09j8dYidTND1FCWRGDxkBMCmHzr1bYM", wsheetName="Mistys Money N Fame", msheetId="1g5kX6F34q2HFn4aqfXb5tkjBM_qTSy4fHUakxz6qJj0", genType=0)
+create_pdf(wsheetId="1h-tZdm0-UJnC09j8dYidTND1FCWRGDxkBMCmHzr1bYM", wsheetName="Mistys Money N Fame", msheetId="1g5kX6F34q2HFn4aqfXb5tkjBM_qTSy4fHUakxz6qJj0", genType=1)

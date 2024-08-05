@@ -147,7 +147,7 @@ def create_pdf(wsheetId=None, sheetName=None, msheetId=None, genType=None):
         v_damssire3 = damssire3_pred[0][3]
         g_damssire3 = damssire3_pred[0][4]
 
-    grade_info = getLetterGradeBy(g_sire, g_damssire, g_damssire2, g_damssire3)
+    grade_info = getGradeInfo(g_sire, g_damssire, g_damssire2, g_damssire3)
     letter_grade = grade_info["letter"]
     grade_color = grade_info["color_info"]
     v_sum = get2DigitsStringValue(float(v_sire) + float(v_damssire) + float(v_damssire2) + float(v_damssire3))
